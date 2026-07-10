@@ -76,7 +76,7 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok"}
+        return {"status": "ok", "mode": "demo" if settings.demo_mode else "live"}
 
     @app.get("/api/meta")
     def meta():
@@ -240,7 +240,9 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
                             "type": "error",
                             "message": (
                                 f"{type(exc).__name__}: {exc}. If this mentions "
-                                "credentials, set ANTHROPIC_API_KEY and restart the backend."
+                                "credentials, set ANTHROPIC_API_KEY — or set "
+                                "DEMO_MODE=1 for a zero-cost demo — and restart "
+                                "the backend."
                             ),
                         }
                     )

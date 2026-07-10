@@ -478,6 +478,10 @@ class AgentService:
     # ------------------------------------------------------------------ client
 
     def _default_client_factory(self):
+        if self.settings.demo_mode:
+            from app.agents.simulated import SimulatedClient
+
+            return SimulatedClient()
         import anthropic
 
         return anthropic.AsyncAnthropic()

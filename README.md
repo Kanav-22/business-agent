@@ -22,8 +22,12 @@ backend/   FastAPI + SQLAlchemy (SQLite) + Anthropic API agents
 
 ## Quick start
 
-Requires Python 3.11+, Node 18+, and an Anthropic API key (only for chat — the
-dashboard KPIs and all tests work without one).
+Requires Python 3.11+ and Node 18+. An Anthropic API key is only needed for
+*live* agents — set **`DEMO_MODE=1` instead for a zero-cost demo**: a built-in
+simulated model does rule-based routing and canned reasoning while every tool
+call stays real (live SQL against the database, drafts land in the real
+Approvals inbox, reports persist). The chat footer shows a "demo mode" badge.
+The Researcher's web search is the one thing that genuinely needs a key.
 
 ### 1. Backend
 
@@ -37,8 +41,9 @@ python3 -m venv .venv
 # Seed the synthetic database (idempotent; --force to regenerate)
 .venv/bin/python scripts/seed.py
 
-# Run the API (chat needs the key; KPIs work without it)
-export ANTHROPIC_API_KEY=sk-ant-...
+# Run the API — pick ONE of:
+export DEMO_MODE=1                  # zero-cost demo (no key needed), or…
+export ANTHROPIC_API_KEY=sk-ant-... # …live agents (claude-sonnet-4-6)
 .venv/bin/uvicorn app.main:app --reload --port 8000
 ```
 
@@ -50,7 +55,8 @@ cd backend
 py -3 -m venv .venv        # or: python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\python scripts\seed.py
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
+$env:DEMO_MODE = "1"                        # zero-cost demo (no key), or:
+# $env:ANTHROPIC_API_KEY = "sk-ant-..."     # live agents
 .venv\Scripts\uvicorn app.main:app --reload --port 8000
 ```
 
@@ -169,7 +175,8 @@ Covers:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Required for chat |
+| `ANTHROPIC_API_KEY` | — | Required for live agents |
+| `DEMO_MODE` | `0` | `1` = zero-cost simulated model (real tools, $0) |
 | `AGENT_MODEL` | `claude-sonnet-4-6` | Model for all agents |
 | `AGENT_TOKEN_BUDGET` | `150000` | Max tokens per chat request (whole tree) |
 | `DATA_SEED` | `7` | Synthetic data RNG seed |

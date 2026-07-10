@@ -28,6 +28,8 @@ class Settings:
     output_price_per_mtok: float = 15.0
     # Weekly Monday-morning jobs (control check + CEO briefing).
     scheduler_enabled: bool = True
+    # DEMO_MODE=1: zero-cost simulated model (rule-based routing, real tools).
+    demo_mode: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -50,6 +52,7 @@ class Settings:
             "false",
             "no",
         )
+        s.demo_mode = os.environ.get("DEMO_MODE", "0").lower() in ("1", "true", "yes")
         if origins := os.environ.get("CORS_ORIGINS"):
             s.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
         return s

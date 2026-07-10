@@ -10,7 +10,7 @@ import {
   Send,
   Wrench,
 } from "lucide-react";
-import { WS_CHAT_URL } from "@/lib/api";
+import { WS_CHAT_URL, getJson } from "@/lib/api";
 import type { AgentEvent } from "@/lib/types";
 
 /* ------------------------------------------------------------------ model */
@@ -270,6 +270,7 @@ export function Chat() {
   const [input, setInput] = useState("");
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const closedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -306,6 +307,9 @@ export function Chat() {
   useEffect(() => {
     closedRef.current = false;
     connect();
+    getJson<{ mode?: string }>("/api/health")
+      .then((h) => setMode(h.mode ?? null))
+      .catch(() => {});
     return () => {
       closedRef.current = true;
       wsRef.current?.close();
@@ -397,8 +401,14 @@ export function Chat() {
               connected ? "bg-emerald-500" : "bg-orange-500",
             )}
           />
-          {connected ? "Connected" : "Reconnecting…"} · requires ANTHROPIC_API_KEY
-          on the backend
+          {connected ? "Connected" : "Reconnecting…"}
+          {mode === "demo" ? (
+            <span className="ml-1 rounded border border-emerald-800 bg-emerald-950/40 px-1.5 py-0.5 text-emerald-300">
+              demo mode — $0, simulated reasoning, live SQL
+            </span>
+          ) : (
+            <span> · requires ANTHROPIC_API_KEY on the backend</span>
+          )}
         </div>
       </div>
     </div>
