@@ -63,8 +63,10 @@ def run_sql_query(
         return sqlite3.SQLITE_DENY
 
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    except sqlite3.OperationalError as exc:
+        # Path.as_uri() renders a proper file:/// URI (Windows drive letters,
+        # spaces and backslashes included) — a raw f"file:{path}" breaks there.
+        conn = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+    except (sqlite3.OperationalError, ValueError) as exc:
         raise ToolError(f"Database not available: {exc}") from exc
     try:
         conn.row_factory = sqlite3.Row
