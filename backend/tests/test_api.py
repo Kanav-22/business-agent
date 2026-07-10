@@ -1,0 +1,87 @@
+"""REST + WebSocket API tests (FastAPI TestClient, scripted model client)."""
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+from app.agents.service import AgentService
+from app.main import create_app
+from tests.fake_anthropic import FakeClient, response, text_block, tool_use_block
+
+
+def make_client(settings, responses) -> TestClient:
+    service = AgentService(settings, client_factory=lambda: FakeClient(responses))
+    app = create_app(settings=settings, service=service)
+    return TestClient(app)
+
+
+def test_kpis_endpoint(settings):
+    with make_client(settings, []) as client:
+        res = client.get("/api/kpis")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["company"] == "Lumina Labs"
+        assert body["mrr"] > 0
+        assert body["active_customers"] > 0
+        assert body["cash"] > 0
+        assert body["open_tasks"] > 0
+
+
+def test_chart_endpoint(settings):
+    with make_client(settings, []) as client:
+        res = client.get("/api/chart/revenue-expenses")
+        assert res.status_code == 200
+        series = res.json()
+        assert len(series) == 18
+        assert {"month", "revenue", "expenses", "profit"} <= set(series[0])
+
+
+def test_agents_endpoint(settings):
+    with make_client(settings, []) as client:
+        agents = client.get("/api/agents").json()
+        names = {a["name"] for a in agents}
+        assert names == {"ceo", "cfo"}
+
+
+def test_chat_websocket_streams_delegation(settings):
+    responses = [
+        response(
+            [tool_use_block("tu_1", "delegate_to_agent",
+                            {"agent": "cfo", "task": "Total revenue last month?"})],
+            stop_reason="tool_use",
+        ),
+        response(
+            [tool_use_block("tu_2", "sql_query",
+                            {"query": "SELECT ROUND(SUM(amount), 2) FROM transactions "
+                                      "WHERE type='revenue' GROUP BY strftime('%Y-%m', date) "
+                                      "ORDER BY strftime('%Y-%m', date) DESC LIMIT 1"})],
+            stop_reason="tool_use",
+        ),
+        response([text_block("Revenue last month per the query above.")]),
+        response([text_block("Per the CFO, revenue last month is in the query result.")]),
+    ]
+    with make_client(settings, responses) as client:
+        with client.websocket_connect("/ws/chat") as ws:
+            ws.send_json({"message": "what was revenue last month?"})
+            events = []
+            while True:
+                event = ws.receive_json()
+                events.append(event)
+                if event["type"] == "done":
+                    break
+
+    types = [e["type"] for e in events]
+    assert types.count("run_started") == 2  # ceo + cfo
+    assert "tool_call" in types and "tool_result" in types
+    done = events[-1]
+    assert done["error"] is None
+    assert done["usage"]["total"] == 4 * 180
+    agents_seen = {e.get("agent") for e in events if "agent" in e}
+    assert {"ceo", "cfo"} <= agents_seen
+
+
+def test_chat_websocket_reports_empty_message(settings):
+    with make_client(settings, []) as client:
+        with client.websocket_connect("/ws/chat") as ws:
+            ws.send_json({"message": "   "})
+            event = ws.receive_json()
+            assert event["type"] == "error"
