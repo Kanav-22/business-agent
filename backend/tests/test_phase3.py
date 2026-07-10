@@ -149,11 +149,11 @@ async def test_weekly_briefing_job_saves_briefing(settings, tmp_path):
     assert "Per the CTO" in report["content"]
 
 
-def test_scheduler_has_both_weekly_jobs(settings):
+def test_scheduler_has_all_weekly_jobs(settings):
     service, _ = make_service(settings, [])
     scheduler = create_scheduler(service, service.engine)
     jobs = {j.id for j in scheduler.get_jobs()}
-    assert jobs == {"weekly_control", "weekly_briefing"}
+    assert jobs == {"weekly_control", "weekly_briefing", "weekly_competitor_scan"}
 
 
 def test_reports_api_and_download(settings, tmp_path):

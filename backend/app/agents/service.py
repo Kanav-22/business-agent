@@ -29,6 +29,7 @@ from app.agents.schema_docs import (
 from app.config import Settings
 from app.db import make_engine
 from app.tools.base import Tool, ToolRegistry
+from app.tools.content_writer import make_content_writer_tool
 from app.tools.create_task import make_create_task_tool
 from app.tools.python_calc import make_python_calc_tool
 from app.tools.report_writer import make_report_writer_tool
@@ -156,9 +157,26 @@ Your sub-team (use these exact names with delegate_to_agent):
 - revenue — invoices, AR, MRR movements, churn/expansion
 - control — reconciliation and anomaly checks"""
 
+CONTENT_SYSTEM_PROMPT = f"""\
+You are the Content agent of {_COMPANY_CONTEXT} You draft marketing content: blog \
+posts, emails, social posts, launch announcements.
+
+Method:
+1. You have NO database access. Work strictly from the brief you were given — use the \
+facts and numbers in it verbatim; never invent metrics. You may use web_search for \
+outside context or inspiration.
+2. Write the COMPLETE draft, then submit it with content_writer. That places it in \
+the human Approvals inbox — nothing you write is published without human sign-off, \
+so always finish by submitting.
+3. Voice: clear, concrete, benefit-led. No hype clichés ("game-changing", \
+"revolutionize"), no exclamation-mark pileups.
+
+Reply after submitting with the draft id and a one-line summary."""
+
 CMO_SYSTEM_PROMPT = f"""\
-You are the CMO agent of {_COMPANY_CONTEXT} You answer marketing questions: campaign \
-performance, channels, acquisition, CAC, lead quality.
+You are the CMO agent of {_COMPANY_CONTEXT} You answer marketing questions — campaign \
+performance, channels, acquisition, CAC, lead quality — and you commission marketing \
+content.
 
 {_GROUNDING_RULES}
 
@@ -168,6 +186,13 @@ Marketing conventions:
 55-80% of signups (the rest is organic) — say so when comparing.
 - You may use web_search for OUTSIDE information only (benchmarks, market context), \
 never for internal numbers. Cite URLs when you use it.
+
+Your sub-team: content — drafts posts/emails/announcements and submits them to the \
+human Approvals inbox (nothing is published without a click). When asked to draft or \
+propose content, first gather any numbers yourself with sql_query, then \
+delegate_to_agent('content') with a complete, self-contained brief that includes \
+those facts, the channel, audience and goal. Tell the requester the draft is waiting \
+in Approvals.
 
 Database schema you can query:
 {build_schema_doc(MARKETING_TABLES)}"""
@@ -228,8 +253,11 @@ specialist cannot see this conversation).
 delegate_to_agent calls in a single response — they run concurrently. A broad question \
 like "how is the business doing?" should fan out to cfo, cmo and cto (and coordinator \
 for blockers) at once.
-4. The cfo leads a finance sub-team (FP&A, Reporting, Revenue, Control) and will route \
-internally — send finance questions to the cfo, not to sub-team members.
+4. The cfo leads a finance sub-team (FP&A, Reporting, Revenue, Control) and the cmo \
+leads a content sub-team — both route internally. Send finance questions to the cfo \
+and marketing/content-drafting requests to the cmo, not to sub-team members. Content \
+drafts always land in the human Approvals inbox, never publish directly — say so \
+when relevant.
 5. Call get_agent_roster if you are unsure who can handle something.
 6. Synthesize specialist answers into one crisp, executive-level brief. ATTRIBUTE every \
 finding to its source agent (e.g. "Per the CFO, …"; "The CMO reports …"). If a \
@@ -353,6 +381,21 @@ class AgentService:
             ),
         }
 
+        # ---------------------------------------------------- content sub-team
+        self.content_team: dict[str, Agent] = {
+            "content": agent(
+                "content",
+                "Content",
+                "Drafts marketing content (blog posts, emails, social, "
+                "announcements); every draft goes to the human Approvals inbox.",
+                "#e879f9",
+                CONTENT_SYSTEM_PROMPT,
+                _registry(make_content_writer_tool(self.engine)),
+                ["content_writer"],
+                server_tools=[WEB_SEARCH_TOOL],
+            ),
+        }
+
         # ------------------------------------------------------- specialists
         self.specialists: dict[str, Agent] = {
             "cfo": agent(
@@ -370,11 +413,15 @@ class AgentService:
                 "cmo",
                 "CMO",
                 "Marketing: campaign performance, channels, CAC, leads, "
-                "conversions, acquisition trends; external market benchmarks.",
+                "conversions, acquisition trends, market benchmarks; commissions "
+                "content drafts (via its Content sub-agent → Approvals inbox).",
                 "#f472b6",
                 CMO_SYSTEM_PROMPT,
-                _registry(sql_tool(MARKETING_TABLES)),
-                ["sql_query"],
+                _registry(
+                    sql_tool(MARKETING_TABLES),
+                    self._make_delegate_tool(self.content_team),
+                ),
+                ["sql_query", "delegate_to_agent"],
                 server_tools=[WEB_SEARCH_TOOL],
             ),
             "cto": agent(
@@ -421,7 +468,12 @@ class AgentService:
         )
 
     def all_agents(self) -> list[Agent]:
-        return [self.ceo, *self.specialists.values(), *self.finance_team.values()]
+        return [
+            self.ceo,
+            *self.specialists.values(),
+            *self.finance_team.values(),
+            *self.content_team.values(),
+        ]
 
     # ------------------------------------------------------------------ client
 

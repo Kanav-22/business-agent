@@ -11,9 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import PlainTextResponse
 
+from pydantic import BaseModel
+
 from app.api.activity import get_activity
+from app.api.approvals import AlreadyDecided, decide_approval, list_approvals
 from app.api.kpis import get_kpis, get_meta, get_monthly_series
-from app.api.reports import get_report, list_reports
+from app.api.reports import get_report, list_reports, save_report
 from app.config import Settings
 from app.data.synthetic import SyntheticProvider
 from app.db import make_engine
@@ -22,6 +25,12 @@ from app.scheduler import JOBS, create_scheduler
 log = logging.getLogger("business-agent")
 
 MAX_HISTORY_MESSAGES = 8
+
+
+class DecisionBody(BaseModel):
+    """Optional note accompanying an approve/reject decision."""
+
+    note: str | None = None
 
 
 def create_app(settings: Settings | None = None, service=None) -> FastAPI:
@@ -136,6 +145,43 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
         if not briefings:
             return {"report": None}
         return {"report": get_report(engine, briefings[0]["id"])}
+
+    # ------------------------------------------------------------ approvals
+
+    @app.get("/api/approvals")
+    def approvals(status: str | None = None, limit: int = 100):
+        if status not in (None, "pending", "approved", "rejected"):
+            raise HTTPException(status_code=400, detail="invalid status filter")
+        return list_approvals(engine, status=status, limit=max(1, min(limit, 200)))
+
+    def _decide(approval_id: int, approve: bool, body: DecisionBody | None):
+        try:
+            decided = decide_approval(
+                engine, approval_id, approve=approve, note=body.note if body else None
+            )
+        except AlreadyDecided as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        if decided is None:
+            raise HTTPException(status_code=404, detail="approval not found")
+        return decided
+
+    @app.post("/api/approvals/{approval_id}/approve")
+    def approve(approval_id: int, body: DecisionBody | None = None):
+        decided = _decide(approval_id, True, body)
+        # Approval is the moment content becomes an artifact: publish it to
+        # the reports library (kind='content'), our stand-in for "external".
+        report_id = save_report(
+            engine,
+            title=decided["title"],
+            content=decided["content"],
+            agent=decided["agent"],
+            kind="content",
+        )
+        return {**decided, "published_report_id": report_id}
+
+    @app.post("/api/approvals/{approval_id}/reject")
+    def reject(approval_id: int, body: DecisionBody | None = None):
+        return _decide(approval_id, False, body)
 
     # ---------------------------------------------------------------- jobs
 

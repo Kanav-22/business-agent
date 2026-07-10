@@ -44,10 +44,24 @@ export interface ActivityRun {
 export interface ReportSummary {
   id: number;
   title: string;
-  kind: "report" | "briefing" | "control_check";
+  kind: "report" | "briefing" | "control_check" | "research" | "content";
   agent: string;
   created_at: string;
   excerpt: string;
+}
+
+export interface Approval {
+  id: number;
+  kind: string;
+  title: string;
+  channel: string;
+  agent: string;
+  status: "pending" | "approved" | "rejected";
+  content: string;
+  created_at: string;
+  decided_at: string | null;
+  note: string | null;
+  published_report_id?: number;
 }
 
 export interface ReportDetail extends Omit<ReportSummary, "excerpt"> {

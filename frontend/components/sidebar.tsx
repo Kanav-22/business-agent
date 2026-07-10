@@ -7,6 +7,7 @@ import {
   Activity,
   Database,
   FileText,
+  Inbox,
   LayoutDashboard,
   MessageSquare,
   Sparkles,
@@ -17,6 +18,7 @@ const NAV = [
   { href: "/chat", label: "Chat with CEO", icon: MessageSquare },
   { href: "/activity", label: "Agent Activity", icon: Activity },
   { href: "/reports", label: "Reports", icon: FileText },
+  { href: "/approvals", label: "Approvals", icon: Inbox },
 ];
 
 const UPCOMING = [{ label: "Data", icon: Database, phase: "Phase 5" }];
@@ -73,10 +75,10 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto px-3 text-[11px] leading-relaxed text-slate-600">
-        Phase 3 — finance sub-team
+        Phase 4 — content team
         <br />
-        (FP&A · Reporting · Revenue · Control)
-        <br />+ Monday auto-briefings
+        + human-in-the-loop approvals
+        <br />+ scheduled competitor scans
       </div>
     </aside>
   );

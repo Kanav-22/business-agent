@@ -33,6 +33,15 @@ projects at risk and their deadlines (cto); (4) blocked work across departments 
 (coordinator). Synthesize into a brief of at most ~300 words with clear attribution \
 per specialist. This is a scheduled report — do not address the reader directly."""
 
+COMPETITOR_SCAN_TASK = """\
+Run the weekly competitor scan for Lumina Labs (B2B SaaS analytics; plans at \
+$99/$299/$899 per month). Search the web for, from roughly the past week: (1) pricing \
+changes or notable pricing pages among analytics/BI competitors; (2) significant \
+product launches or feature announcements in the analytics space; (3) funding, M&A or \
+shutdown news among comparable companies. Cite the URL for every claim. Finish with \
+2-3 concrete implications for Lumina Labs. This is a scheduled report — do not \
+address the reader directly."""
+
 
 async def _noop_event(event: dict) -> None:
     return None
@@ -78,9 +87,32 @@ async def run_weekly_briefing(service, engine: Engine) -> int:
     return report_id
 
 
+async def run_weekly_competitor_scan(service, engine: Engine) -> int:
+    """Researcher competitor scan (server-side web search) → reports library."""
+    today = dt.date.today().isoformat()
+    result = await service.specialists["researcher"].run(
+        COMPETITOR_SCAN_TASK,
+        on_event=_noop_event,
+        budget=TokenBudget(limit=service.settings.token_budget),
+    )
+    content = result.output or "(no output)"
+    if result.error:
+        content = f"> ⚠ Run ended with error: {result.error}\n\n{content}"
+    report_id = save_report(
+        engine,
+        title=f"Competitor scan — {today}",
+        content=f"# Competitor scan — {today}\n\n{content}\n",
+        agent="researcher",
+        kind="research",
+    )
+    log.info("weekly competitor scan saved as report #%s", report_id)
+    return report_id
+
+
 JOBS = {
     "weekly_control": run_weekly_control,
     "weekly_briefing": run_weekly_briefing,
+    "weekly_competitor_scan": run_weekly_competitor_scan,
 }
 
 
@@ -101,6 +133,15 @@ def create_scheduler(service, engine: Engine) -> AsyncIOScheduler:
         args=[service, engine],
         id="weekly_briefing",
         name="Weekly CEO briefing",
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        run_weekly_competitor_scan,
+        CronTrigger(day_of_week="mon", hour=6, minute=40),
+        args=[service, engine],
+        id="weekly_competitor_scan",
+        name="Weekly competitor scan (Researcher)",
         misfire_grace_time=3600,
         coalesce=True,
     )

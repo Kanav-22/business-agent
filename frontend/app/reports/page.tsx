@@ -16,6 +16,8 @@ const KIND_META: Record<
   report: { label: "report", className: "border-lime-800 bg-lime-950/40 text-lime-300" },
   briefing: { label: "briefing", className: "border-violet-800 bg-violet-950/40 text-violet-300" },
   control_check: { label: "control check", className: "border-rose-800 bg-rose-950/40 text-rose-300" },
+  research: { label: "research", className: "border-amber-800 bg-amber-950/40 text-amber-300" },
+  content: { label: "published content", className: "border-fuchsia-800 bg-fuchsia-950/40 text-fuchsia-300" },
 };
 
 function JobButton({

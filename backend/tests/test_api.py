@@ -41,7 +41,7 @@ def test_agents_endpoint(settings):
         names = {a["name"] for a in agents}
         assert names == {
             "ceo", "cfo", "cmo", "cto", "researcher", "coordinator",
-            "fpa", "reporting", "revenue", "control",
+            "fpa", "reporting", "revenue", "control", "content",
         }
         finance = {a["name"] for a in agents if a["team"] == "finance"}
         assert finance == {"fpa", "reporting", "revenue", "control"}

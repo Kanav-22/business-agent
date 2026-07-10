@@ -126,6 +126,27 @@ class Meta(Base):
     value: Mapped[str] = mapped_column(String(200))
 
 
+class Approval(Base):
+    """Human-in-the-loop inbox. Outward-facing agent output (content drafts)
+    lands here as 'pending' — nothing external happens without a click.
+
+    status: 'pending' | 'approved' | 'rejected'.
+    """
+
+    __tablename__ = "approvals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)  # 'content'
+    title: Mapped[str] = mapped_column(String(200))
+    channel: Mapped[str] = mapped_column(String(30))
+    agent: Mapped[str] = mapped_column(String(30))
+    status: Mapped[str] = mapped_column(String(10), index=True, default="pending")
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, index=True)
+    decided_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+
 class Report(Base):
     """Generated documents. kind: 'report' | 'briefing' | 'control_check'.
 
