@@ -2,12 +2,14 @@
 that streams the CEO delegation tree live."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.activity import get_activity
 from app.api.kpis import get_kpis, get_meta, get_monthly_series
 from app.config import Settings
 from app.data.synthetic import SyntheticProvider
@@ -65,6 +67,15 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
     def revenue_expenses():
         return get_monthly_series(engine)
 
+    @app.get("/api/activity")
+    def activity(limit: int = 50):
+        return get_activity(
+            settings.logs_dir,
+            limit=max(1, min(limit, 200)),
+            input_price_per_mtok=settings.input_price_per_mtok,
+            output_price_per_mtok=settings.output_price_per_mtok,
+        )
+
     @app.get("/api/agents")
     def agents():
         roster = [service.ceo, *service.specialists.values()]
@@ -85,6 +96,8 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
     async def chat(ws: WebSocket):
         await ws.accept()
         history: list[dict] = []
+        # Parallel delegation emits events concurrently; serialize the socket.
+        send_lock = asyncio.Lock()
         try:
             while True:
                 payload = await ws.receive_json()
@@ -94,7 +107,8 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
                     continue
 
                 async def on_event(event: dict) -> None:
-                    await ws.send_json(event)
+                    async with send_lock:
+                        await ws.send_json(event)
 
                 try:
                     result, budget = await service.ask_ceo(

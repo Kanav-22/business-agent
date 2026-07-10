@@ -15,10 +15,10 @@ import {
 const NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/chat", label: "Chat with CEO", icon: MessageSquare },
+  { href: "/activity", label: "Agent Activity", icon: Activity },
 ];
 
 const UPCOMING = [
-  { label: "Agent Activity", icon: Activity, phase: "Phase 2" },
   { label: "Reports", icon: FileText, phase: "Phase 3" },
   { label: "Data", icon: Database, phase: "Phase 5" },
 ];
@@ -75,9 +75,9 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto px-3 text-[11px] leading-relaxed text-slate-600">
-        Phase 1 — CEO orchestrator
+        Phase 2 — full C-suite:
         <br />
-        routing to the CFO agent.
+        CFO · CMO · CTO · Researcher · Coordinator
       </div>
     </aside>
   );

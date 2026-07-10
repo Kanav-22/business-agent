@@ -23,6 +23,9 @@ class Settings:
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
     )
     data_seed: int = 7
+    # Prices used for the Activity page cost estimates (claude-sonnet-4-6).
+    input_price_per_mtok: float = 3.0
+    output_price_per_mtok: float = 15.0
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -34,6 +37,12 @@ class Settings:
         s.agent_model = os.environ.get("AGENT_MODEL", s.agent_model)
         s.token_budget = int(os.environ.get("AGENT_TOKEN_BUDGET", s.token_budget))
         s.data_seed = int(os.environ.get("DATA_SEED", s.data_seed))
+        s.input_price_per_mtok = float(
+            os.environ.get("AGENT_PRICE_INPUT_MTOK", s.input_price_per_mtok)
+        )
+        s.output_price_per_mtok = float(
+            os.environ.get("AGENT_PRICE_OUTPUT_MTOK", s.output_price_per_mtok)
+        )
         if origins := os.environ.get("CORS_ORIGINS"):
             s.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
         return s

@@ -39,7 +39,7 @@ def test_agents_endpoint(settings):
     with make_client(settings, []) as client:
         agents = client.get("/api/agents").json()
         names = {a["name"] for a in agents}
-        assert names == {"ceo", "cfo"}
+        assert names == {"ceo", "cfo", "cmo", "cto", "researcher", "coordinator"}
 
 
 def test_chat_websocket_streams_delegation(settings):

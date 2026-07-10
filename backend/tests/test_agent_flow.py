@@ -131,15 +131,16 @@ async def test_delegation_depth_limit(settings):
 async def test_unknown_agent_delegation_fails_gracefully(settings):
     responses = [
         response(
-            [tool_use_block("tu_1", "delegate_to_agent", {"agent": "cmo", "task": "CAC?"})],
+            [tool_use_block("tu_1", "delegate_to_agent",
+                            {"agent": "legal", "task": "Review the MSA."})],
             stop_reason="tool_use",
         ),
-        response([text_block("The CMO joins the roster in Phase 2.")]),
+        response([text_block("We have no legal specialist on the roster.")]),
     ]
     service, _ = make_service(settings, responses)
-    result, _, events = await collect_events(service, "which channel has best CAC?")
+    result, _, events = await collect_events(service, "can legal review the MSA?")
     failure = next(e for e in events if e["type"] == "tool_result")
-    assert "no agent named 'cmo'" in failure["output"]
+    assert "no agent named 'legal'" in failure["output"]
     assert result.error is None
 
 

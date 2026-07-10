@@ -4,9 +4,11 @@ A multi-agent system that runs a virtual company: a **CEO orchestrator** delegat
 C-suite specialist agents operating on real (currently synthetic) business data, surfaced
 through a live dashboard. Built per [`BUSINESS_AGENT_SPEC.md`](./BUSINESS_AGENT_SPEC.md).
 
-**Phase 1 (this repo state):** CEO → CFO delegation over WebSocket, a reconcilable
-synthetic dataset for "Lumina Labs" (a fictional 12-person SaaS company), and a dashboard
-with Overview (KPIs + revenue/expense chart) and Chat (live delegation tree) pages.
+**Phase 2 (this repo state):** the full C-suite. The CEO orchestrator fans out to
+**CFO, CMO, CTO, Researcher and Workflow Coordinator** — in parallel when a question
+spans domains — over a reconcilable synthetic dataset for "Lumina Labs" (a fictional
+12-person SaaS company). Dashboard: Overview (KPIs + revenue/expense chart), Chat
+(live delegation tree) and Agent Activity (every run with tools, tokens and cost).
 
 ```
 frontend/  Next.js 14 + TypeScript + Tailwind + Recharts
@@ -51,12 +53,17 @@ If the backend runs elsewhere, copy `.env.local.example` to `.env.local` and set
 Open http://localhost:3000 → **Overview** shows MRR, burn, runway, customers, open
 tasks and the revenue/expense chart, all computed from SQL. Go to **Chat** and ask:
 
-> *What was our profit last month and what's our runway?*
+> *How is the business doing?*
 
-You'll watch the CEO delegate to the CFO, the CFO run `sql_query`/`python_calc`
-(inputs and results expandable per tool call), and the CEO synthesize the answer.
-Verify the numbers yourself against `backend/data/lumina.db` — the dataset is
-deterministic and reconcilable.
+You'll watch the CEO fan out to the CFO, CMO and CTO **in parallel**, each specialist
+run its own `sql_query` calls (inputs and results expandable per tool call), and the
+CEO synthesize a brief that attributes every finding to its source agent. Then check
+**Agent Activity** for the run feed with per-run token usage and cost. Verify numbers
+against `backend/data/lumina.db` — the dataset is deterministic and reconcilable.
+
+Other good demos: *"Which channel has the best CAC?"* (CMO), *"Are we on track for
+the v2 launch?"* (CTO), *"What's blocked this week?"* (Coordinator), *"What are
+competitors pricing at?"* (Researcher, uses Anthropic server-side web search).
 
 ## Tests
 
@@ -73,17 +80,30 @@ Covers:
   read-only connection), single statement, row limit.
 - **python_calc sandbox** — import allowlist (math/statistics only), no file access,
   timeout, subprocess isolation.
-- **Agent loop** — full CEO→CFO delegation with a scripted model client and *real*
-  tool execution: event ordering, run parenting, token budget enforcement, delegation
-  depth limit, JSONL decision logging.
-- **API** — KPI/chart endpoints and the chat WebSocket stream.
+- **Agent loop** — full CEO→specialist delegation with a scripted model client and
+  *real* tool execution: event ordering, run parenting, token budget enforcement,
+  delegation depth limit, JSONL decision logging.
+- **Phase 2** — parallel fan-out to 3 specialists (results return in one message, in
+  order), per-agent table allowlists, validated `create_task` writes, server-side web
+  tool declarations, `pause_turn` resumption, activity feed assembly from logs.
+- **API** — KPI/chart/activity endpoints and the chat WebSocket stream.
 
 ## Architecture notes (Phase 1)
 
 - **One `Agent` class, many configs** (`backend/app/agents/base.py`): a config is a
   system prompt + allowlisted tool subset + model. The CEO's only tools are
-  `get_agent_roster` and `delegate_to_agent`; the CFO gets `sql_query` (finance tables
-  only) and `python_calc`. Least privilege throughout.
+  `get_agent_roster` and `delegate_to_agent`. Specialists get their own registries:
+  CFO → `sql_query` (finance tables) + `python_calc`; CMO → `sql_query` (campaigns/
+  customers) + server-side `web_search`; CTO → `sql_query` (projects/tasks/employees);
+  Researcher → server-side `web_search`/`web_fetch` only (no internal data);
+  Coordinator → `sql_query` (tasks/employees) + validated `create_task`. Least
+  privilege applies to table docs too — each agent only sees its own schema.
+- **Parallel delegation**: all tool calls in one model turn run concurrently
+  (`asyncio.gather`), so a broad question fans out to several specialists at once;
+  their results return to the CEO in a single message, in call order.
+- **The Coordinator's `create_task` is the only write path**, and it is deterministic
+  code that validates department/status/dates/assignee before inserting — agents
+  never write to the database directly.
 - **Deterministic code validates and executes** — agents never write to the DB. SQL is
   forced read-only at the sqlite level (URI `mode=ro` + authorizer callback), not by
   prompt. `python_calc` runs in an isolated subprocess with rlimits and a restricted
@@ -111,7 +131,7 @@ Covers:
 
 ## Roadmap
 
-Phase 2: full C-suite (CMO, CTO, Researcher, Workflow Coordinator) with parallel
-delegation + Agent Activity page · Phase 3: CFO sub-team, scheduled reconciliation,
-reports · Phase 4: approvals inbox for outward-facing work · Phase 5: real data
-providers, multi-tenant, Postgres. See the spec for definitions of done.
+Phase 3: CFO sub-team (FP&A, Reporting, Revenue, Control), scheduled reconciliation
+and weekly briefings (APScheduler), Reports page · Phase 4: Content/Researcher
+schedules + approvals inbox for outward-facing work · Phase 5: real data providers,
+multi-tenant, Postgres. See the spec for definitions of done.

@@ -28,12 +28,34 @@ def response(blocks, stop_reason="end_turn", input_tokens=120, output_tokens=60)
 
 
 class _FakeMessages:
+    """Scripted responses.
+
+    Two modes:
+    - list: one FIFO queue consumed in call order (fine for sequential flows).
+    - dict: {system-prompt substring: [responses]} — required for PARALLEL
+      delegation, where specialists call create() concurrently and a single
+      queue would hand responses to the wrong agent.
+    """
+
     def __init__(self, responses):
-        self._responses = list(responses)
+        if isinstance(responses, dict):
+            self._routes = {key: list(queue) for key, queue in responses.items()}
+            self._responses = None
+        else:
+            self._routes = None
+            self._responses = list(responses)
         self.calls: list[dict] = []
 
     async def create(self, **kwargs):
         self.calls.append(kwargs)
+        if self._routes is not None:
+            system = kwargs.get("system") or ""
+            for key, queue in self._routes.items():
+                if key in system:
+                    if not queue:
+                        raise AssertionError(f"FakeClient route {key!r} ran out of responses")
+                    return queue.pop(0)
+            raise AssertionError(f"FakeClient: no route matches system prompt: {system[:80]!r}")
         if not self._responses:
             raise AssertionError("FakeClient ran out of scripted responses")
         return self._responses.pop(0)

@@ -22,6 +22,25 @@ export interface MonthPoint {
   profit: number;
 }
 
+/** One row of the Agent Activity feed (from /api/activity). */
+export interface ActivityRun {
+  run_id: string;
+  parent_run_id: string | null;
+  agent: string;
+  agent_display: string;
+  color: string;
+  depth: number;
+  task: string;
+  started_at: number;
+  status: "running" | "completed" | "error";
+  error: string | null;
+  duration_ms: number | null;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  tools: { tool: string; count: number }[];
+}
+
 /** Events streamed over /ws/chat while the delegation tree runs. */
 export interface AgentEvent {
   type:
