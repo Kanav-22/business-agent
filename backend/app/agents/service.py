@@ -1,7 +1,13 @@
 """Agent wiring: per-agent tool registries, the C-suite roster, CEO orchestrator.
 
-Phase 2 roster: CEO → CFO / CMO / CTO / Researcher / Workflow Coordinator.
-Each specialist gets ONLY the tools (and only the table docs) it needs.
+Phase 3 org chart:
+
+    CEO ──► CFO ──► FP&A / Reporting / Revenue / Control   (finance sub-team)
+        ──► CMO / CTO / Researcher / Workflow Coordinator
+
+The CFO mirrors the CEO pattern one level down: it routes finance questions to
+its sub-team and synthesizes. Each agent gets ONLY the tools (and only the
+table docs) it needs.
 """
 from __future__ import annotations
 
@@ -12,9 +18,11 @@ from app.agents.base import Agent, AgentConfig, AgentResult, ToolContext
 from app.agents.budget import TokenBudget
 from app.agents.logging import DecisionLogger
 from app.agents.schema_docs import (
+    CONTROL_TABLES,
     ENGINEERING_TABLES,
     FINANCE_TABLES,
     MARKETING_TABLES,
+    REVENUE_TABLES,
     WORKFLOW_TABLES,
     build_schema_doc,
 )
@@ -23,6 +31,7 @@ from app.db import make_engine
 from app.tools.base import Tool, ToolRegistry
 from app.tools.create_task import make_create_task_tool
 from app.tools.python_calc import make_python_calc_tool
+from app.tools.report_writer import make_report_writer_tool
 from app.tools.sql_query import make_sql_query_tool
 
 # Kept as a public alias — used by tests and by the finance schema docs.
@@ -46,25 +55,106 @@ dates matter. "Last month" means the final full month in the window.
 Answer style: concise and executive-ready. Lead with the answer, then 1-3 supporting \
 lines. Format money like $12,345."""
 
-CFO_SYSTEM_PROMPT = f"""\
-You are the CFO agent of {_COMPANY_CONTEXT} You answer financial questions for the CEO \
-and leadership with rigor.
-
-{_GROUNDING_RULES}
-
-Use python_calc for derived math (growth rates, runway, averages) instead of doing \
-arithmetic in your head.
-
+_FINANCE_CONVENTIONS = """\
 Financial conventions for this company:
 - Profit (net income) for a period = revenue − expenses in that period.
 - Monthly net burn = expenses − revenue for that month (positive = losing money).
 - Current cash = meta.starting_cash + all revenue − all expenses in the window.
 - Runway (months) = current cash ÷ average monthly net burn over the last 3 full months. \
 If average burn is zero or negative, runway is effectively infinite — say so.
-- MRR = SUM(mrr) of customers WHERE churn_date IS NULL.
+- MRR = SUM(mrr) of customers WHERE churn_date IS NULL."""
+
+FPA_SYSTEM_PROMPT = f"""\
+You are the FP&A agent of {_COMPANY_CONTEXT} You handle financial planning & analysis: \
+profit, burn, runway, cash, budget-vs-actual and forecasts.
+
+{_GROUNDING_RULES}
+
+Use python_calc for derived math (growth rates, runway, forecasts) instead of doing \
+arithmetic in your head. For forecasts, use simple explicit models (e.g. average of \
+recent MoM growth applied forward) and STATE your assumptions.
+
+{_FINANCE_CONVENTIONS}
 
 Database schema you can query:
 {build_schema_doc(FINANCE_TABLES)}"""
+
+REPORTING_SYSTEM_PROMPT = f"""\
+You are the Reporting agent of {_COMPANY_CONTEXT} You produce formal finance documents \
+(P&L statements, expense breakdowns, monthly summaries).
+
+{_GROUNDING_RULES}
+
+Your workflow, always in this order:
+1. Gather and verify every number with sql_query.
+2. Save the document with report_writer (title + ordered sections; use markdown \
+tables for figures).
+3. Reply with a one-paragraph summary and the saved report id.
+
+{_FINANCE_CONVENTIONS}
+
+Database schema you can query:
+{build_schema_doc(FINANCE_TABLES)}"""
+
+REVENUE_SYSTEM_PROMPT = f"""\
+You are the Revenue agent of {_COMPANY_CONTEXT} You handle accounts receivable and \
+revenue quality: invoices (issued/paid/overdue), MRR movements, churn and expansion.
+
+{_GROUNDING_RULES}
+
+Revenue conventions:
+- AR outstanding = invoices with status 'issued' or 'overdue'.
+- MRR movement between months: new (signups), expansion (price increases), churned \
+(churn_date set). Customers are billed on the 1st; churn_date month is unbilled.
+
+Database schema you can query:
+{build_schema_doc(REVENUE_TABLES)}"""
+
+CONTROL_SYSTEM_PROMPT = f"""\
+You are the Control agent of {_COMPANY_CONTEXT} You run reconciliation and anomaly \
+checks — you are the skeptic of the finance team.
+
+{_GROUNDING_RULES}
+
+Your standard checks (run the relevant ones, or all when asked for a full check):
+1. Billing reconciliation: for the last full month, subscription revenue must equal \
+the sum of amounts billed to customers active that month, with one transaction per \
+customer.
+2. Payroll reconciliation: monthly salary spend must equal the sum of salary_annual/12 \
+of employees hired by that month.
+3. Marketing reconciliation: per campaign, marketing transactions must sum to \
+campaigns.spend.
+4. Invoices: one invoice per subscription transaction, equal amounts; report the \
+overdue count and value.
+5. Anomalies: any expense category moving more than ±30% month-over-month; any \
+duplicate transactions.
+
+Report each check as a line: [OK] / [WARN] / [CRITICAL] with the numbers that prove it. \
+Use python_calc for arithmetic.
+
+Database schema you can query:
+{build_schema_doc(CONTROL_TABLES)}"""
+
+CFO_SYSTEM_PROMPT = """\
+You are the CFO agent of Lumina Labs, a 12-person B2B SaaS analytics company. You lead \
+the finance team; your job is routing finance work to your sub-team and synthesizing \
+their answers — NOT answering from memory.
+
+Rules:
+1. Every number in your answers must come from a sub-team agent you delegated to.
+2. Make delegated tasks specific and self-contained. Delegate to several sub-agents \
+IN PARALLEL (all delegate_to_agent calls in one response) when a request spans areas.
+3. Route: profit/burn/runway/cash/forecasts/budget → fpa. Formal documents ("produce a \
+P&L report") → reporting. Invoices/AR/MRR movements/churn revenue → revenue. \
+Reconciliation, "does X add up", unusual/anomalous spend → control.
+4. Synthesize into one crisp answer and attribute ("Per FP&A…", "Control flags…"). \
+If a sub-agent errored, say so plainly.
+
+Your sub-team (use these exact names with delegate_to_agent):
+- fpa — planning & analysis: profit, burn, runway, cash, forecasts
+- reporting — formal finance reports, saved to the reports library
+- revenue — invoices, AR, MRR movements, churn/expansion
+- control — reconciliation and anomaly checks"""
 
 CMO_SYSTEM_PROMPT = f"""\
 You are the CMO agent of {_COMPANY_CONTEXT} You answer marketing questions: campaign \
@@ -138,14 +228,16 @@ specialist cannot see this conversation).
 delegate_to_agent calls in a single response — they run concurrently. A broad question \
 like "how is the business doing?" should fan out to cfo, cmo and cto (and coordinator \
 for blockers) at once.
-4. Call get_agent_roster if you are unsure who can handle something.
-5. Synthesize specialist answers into one crisp, executive-level brief. ATTRIBUTE every \
+4. The cfo leads a finance sub-team (FP&A, Reporting, Revenue, Control) and will route \
+internally — send finance questions to the cfo, not to sub-team members.
+5. Call get_agent_roster if you are unsure who can handle something.
+6. Synthesize specialist answers into one crisp, executive-level brief. ATTRIBUTE every \
 finding to its source agent (e.g. "Per the CFO, …"; "The CMO reports …"). If a \
 specialist errored, say so plainly.
-6. If part of a question falls outside the roster, answer the parts you can via \
+7. If part of a question falls outside the roster, answer the parts you can via \
 specialists and say plainly what you cannot cover. Do not fill gaps with your own \
 guesses.
-7. Simple greetings or questions about your own capabilities you may answer directly."""
+8. Simple greetings or questions about your own capabilities you may answer directly."""
 
 
 def _preview(text: str, limit: int = 6000) -> str:
@@ -157,6 +249,14 @@ def _registry(*tools: Tool) -> ToolRegistry:
     for tool in tools:
         registry.register(tool)
     return registry
+
+
+def _roster_text(roster: dict[str, Agent]) -> str:
+    lines = [
+        f"- {a.config.name}: {a.config.display_name} — {a.config.description}"
+        for a in roster.values()
+    ]
+    return "Available specialist agents:\n" + "\n".join(lines)
 
 
 class AgentService:
@@ -209,16 +309,62 @@ class AgentService:
                 self.logger,
             )
 
+        # ------------------------------------------------- finance sub-team
+        self.finance_team: dict[str, Agent] = {
+            "fpa": agent(
+                "fpa",
+                "FP&A",
+                "Planning & analysis: profit, burn, runway, cash, budget vs "
+                "actual, forecasts.",
+                "#2dd4bf",
+                FPA_SYSTEM_PROMPT,
+                _registry(sql_tool(FINANCE_TABLES), make_python_calc_tool()),
+                ["sql_query", "python_calc"],
+            ),
+            "reporting": agent(
+                "reporting",
+                "Reporting",
+                "Formal finance documents (P&L, expense breakdowns), saved to "
+                "the reports library.",
+                "#a3e635",
+                REPORTING_SYSTEM_PROMPT,
+                _registry(sql_tool(FINANCE_TABLES), make_report_writer_tool(self.engine)),
+                ["sql_query", "report_writer"],
+            ),
+            "revenue": agent(
+                "revenue",
+                "Revenue",
+                "Accounts receivable, invoices (issued/paid/overdue), MRR "
+                "movements, churn and expansion.",
+                "#4ade80",
+                REVENUE_SYSTEM_PROMPT,
+                _registry(sql_tool(REVENUE_TABLES)),
+                ["sql_query"],
+            ),
+            "control": agent(
+                "control",
+                "Control",
+                "Reconciliation and anomaly checks: does the data add up, what "
+                "moved unexpectedly.",
+                "#fb7185",
+                CONTROL_SYSTEM_PROMPT,
+                _registry(sql_tool(CONTROL_TABLES), make_python_calc_tool()),
+                ["sql_query", "python_calc"],
+            ),
+        }
+
+        # ------------------------------------------------------- specialists
         self.specialists: dict[str, Agent] = {
             "cfo": agent(
                 "cfo",
                 "CFO",
                 "Finance: revenue, expenses, profit, burn, runway, cash, MRR, "
-                "invoices, payroll costs.",
+                "invoices, payroll, reports, reconciliation. Leads the finance "
+                "sub-team (FP&A, Reporting, Revenue, Control).",
                 "#34d399",
                 CFO_SYSTEM_PROMPT,
-                _registry(sql_tool(FINANCE_TABLES), make_python_calc_tool()),
-                ["sql_query", "python_calc"],
+                _registry(self._make_delegate_tool(self.finance_team)),
+                ["delegate_to_agent"],
             ),
             "cmo": agent(
                 "cmo",
@@ -270,9 +416,12 @@ class AgentService:
             "Orchestrator: routes requests to specialists (in parallel) and synthesizes.",
             "#a78bfa",
             CEO_SYSTEM_PROMPT,
-            _registry(self._make_roster_tool(), self._make_delegate_tool()),
+            _registry(self._make_roster_tool(), self._make_delegate_tool(self.specialists)),
             ["get_agent_roster", "delegate_to_agent"],
         )
+
+    def all_agents(self) -> list[Agent]:
+        return [self.ceo, *self.specialists.values(), *self.finance_team.values()]
 
     # ------------------------------------------------------------------ client
 
@@ -288,16 +437,11 @@ class AgentService:
 
     # ------------------------------------------------------------------- tools
 
-    def _roster_text(self) -> str:
-        lines = [
-            f"- {a.config.name}: {a.config.display_name} — {a.config.description}"
-            for a in self.specialists.values()
-        ]
-        return "Available specialist agents:\n" + "\n".join(lines)
-
     def _make_roster_tool(self) -> Tool:
+        service = self
+
         async def handler(tool_input: dict, ctx: ToolContext) -> str:
-            return self._roster_text()
+            return _roster_text(service.specialists)
 
         return Tool(
             name="get_agent_roster",
@@ -306,7 +450,9 @@ class AgentService:
             handler=handler,
         )
 
-    def _make_delegate_tool(self) -> Tool:
+    def _make_delegate_tool(self, roster: dict[str, Agent]) -> Tool:
+        """Delegation tool over a specific roster — used by the CEO (specialists)
+        and by the CFO (its finance sub-team)."""
         service = self
 
         async def handler(tool_input: dict, ctx: ToolContext) -> str:
@@ -314,9 +460,9 @@ class AgentService:
             task = (tool_input.get("task") or "").strip()
             if not task:
                 return "Delegation failed: empty task."
-            agent = service.specialists.get(name)
+            agent = roster.get(name)
             if agent is None:
-                return f"Delegation failed: no agent named {name!r}. {service._roster_text()}"
+                return f"Delegation failed: no agent named {name!r}. {_roster_text(roster)}"
             if ctx.depth + 1 > service.settings.max_delegation_depth:
                 return (
                     "Delegation refused: maximum delegation depth "
@@ -336,20 +482,19 @@ class AgentService:
                 )
             return f"[{agent.config.display_name} answered]\n{_preview(result.output)}"
 
-        agent_names = sorted(self.specialists.keys())
         return Tool(
             name="delegate_to_agent",
             description=(
                 "Delegate a self-contained task to a specialist agent and get their "
                 "answer back. To parallelize, emit several delegate_to_agent calls "
-                "in one response.\n" + self._roster_text()
+                "in one response.\n" + _roster_text(roster)
             ),
             input_schema={
                 "type": "object",
                 "properties": {
                     "agent": {
                         "type": "string",
-                        "enum": agent_names,
+                        "enum": sorted(roster.keys()),
                         "description": "Which specialist to delegate to.",
                     },
                     "task": {

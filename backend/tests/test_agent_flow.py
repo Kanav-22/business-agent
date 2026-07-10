@@ -23,28 +23,37 @@ async def collect_events(service, message):
     return result, budget, events
 
 
-async def test_ceo_delegates_to_cfo_and_synthesizes(settings):
-    responses = [
-        # 1. CEO decides to delegate
-        response(
-            [
-                text_block("Let me pull that from the CFO."),
-                tool_use_block("tu_1", "delegate_to_agent",
-                               {"agent": "cfo", "task": "How many customers do we have?"}),
-            ],
-            stop_reason="tool_use",
-        ),
-        # 2. CFO queries the database (REAL sql_query execution)
-        response(
-            [tool_use_block("tu_2", "sql_query",
-                            {"query": "SELECT COUNT(*) AS n FROM customers WHERE churn_date IS NULL"})],
-            stop_reason="tool_use",
-        ),
-        # 3. CFO answers
-        response([text_block("We have the queried number of active customers.")]),
-        # 4. CEO synthesizes
-        response([text_block("Per the CFO: see active customer count above.")]),
-    ]
+async def test_ceo_delegates_through_cfo_to_fpa(settings):
+    """The Phase 3 org chart: CEO → CFO (finance orchestrator) → FP&A → SQL."""
+    responses = {
+        "CEO orchestrator": [
+            response(
+                [
+                    text_block("Let me pull that from the CFO."),
+                    tool_use_block("tu_1", "delegate_to_agent",
+                                   {"agent": "cfo", "task": "How many active customers?"}),
+                ],
+                stop_reason="tool_use",
+            ),
+            response([text_block("Per the CFO: see active customer count above.")]),
+        ],
+        "You are the CFO": [
+            response(
+                [tool_use_block("tu_2", "delegate_to_agent",
+                                {"agent": "fpa", "task": "Count active customers."})],
+                stop_reason="tool_use",
+            ),
+            response([text_block("Per FP&A: counted from the customers table.")]),
+        ],
+        "FP&A agent": [
+            response(
+                [tool_use_block("tu_3", "sql_query",
+                                {"query": "SELECT COUNT(*) AS n FROM customers WHERE churn_date IS NULL"})],
+                stop_reason="tool_use",
+            ),
+            response([text_block("We have the queried number of active customers.")]),
+        ],
+    }
     service, fake = make_service(settings, responses)
     result, budget, events = await collect_events(service, "How many customers do we have?")
 
@@ -55,39 +64,51 @@ async def test_ceo_delegates_to_cfo_and_synthesizes(settings):
     assert kinds == [
         ("run_started", "ceo"),
         ("agent_text", "ceo"),
-        ("tool_call", "ceo"),          # delegate_to_agent
+        ("tool_call", "ceo"),          # delegate_to_agent → cfo
         ("run_started", "cfo"),
-        ("tool_call", "cfo"),          # sql_query
+        ("tool_call", "cfo"),          # delegate_to_agent → fpa
+        ("run_started", "fpa"),
+        ("tool_call", "fpa"),          # sql_query
+        ("tool_result", "fpa"),
+        ("agent_text", "fpa"),
+        ("run_completed", "fpa"),
         ("tool_result", "cfo"),
         ("agent_text", "cfo"),
         ("run_completed", "cfo"),
-        ("tool_result", "ceo"),        # delegation result back to CEO
+        ("tool_result", "ceo"),
         ("agent_text", "ceo"),
         ("run_completed", "ceo"),
     ]
 
-    # the CFO's run is correctly parented under the CEO's run
+    # parenting: ceo(0) → cfo(1) → fpa(2)
     ceo_run = events[0]["run_id"]
     cfo_started = next(e for e in events if e["type"] == "run_started" and e["agent"] == "cfo")
-    assert cfo_started["parent_run_id"] == ceo_run
-    assert cfo_started["depth"] == 1
+    fpa_started = next(e for e in events if e["type"] == "run_started" and e["agent"] == "fpa")
+    assert cfo_started["parent_run_id"] == ceo_run and cfo_started["depth"] == 1
+    assert fpa_started["parent_run_id"] == cfo_started["run_id"] and fpa_started["depth"] == 2
 
-    # real sql result flowed back through the delegation
-    sql_result = next(e for e in events if e["type"] == "tool_result" and e["agent"] == "cfo")
+    # real sql result flowed back through the delegation chain
+    sql_result = next(e for e in events if e["type"] == "tool_result" and e["agent"] == "fpa")
     assert not sql_result["is_error"]
     assert any(ch.isdigit() for ch in sql_result["output"])
 
-    # token accounting: 4 scripted calls x (120 in + 60 out)
-    assert budget.input_tokens == 4 * 120
-    assert budget.output_tokens == 4 * 60
-    assert set(budget.by_agent) == {"ceo", "cfo"}
+    # token accounting: 6 scripted calls x (120 in + 60 out)
+    assert budget.input_tokens == 6 * 120
+    assert budget.output_tokens == 6 * 60
+    assert set(budget.by_agent) == {"ceo", "cfo", "fpa"}
 
-    # all four API calls used the configured model; CFO got only its own tools
+    # least privilege at every level
     assert all(c["model"] == settings.agent_model for c in fake.calls)
-    cfo_call_tools = {t["name"] for t in fake.calls[1]["tools"]}
-    assert cfo_call_tools == {"sql_query", "python_calc"}
-    ceo_call_tools = {t["name"] for t in fake.calls[0]["tools"]}
-    assert ceo_call_tools == {"get_agent_roster", "delegate_to_agent"}
+    tools_by_system = {
+        c["system"][:30]: {t["name"] for t in c["tools"]} for c in fake.calls
+    }
+    for prefix, tools in tools_by_system.items():
+        if "CEO" in prefix:
+            assert tools == {"get_agent_roster", "delegate_to_agent"}
+        elif "CFO" in prefix:
+            assert tools == {"delegate_to_agent"}
+        elif "FP&A" in prefix:
+            assert tools == {"sql_query", "python_calc"}
 
 
 async def test_decisions_are_logged_as_jsonl(settings):

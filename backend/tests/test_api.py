@@ -39,25 +39,29 @@ def test_agents_endpoint(settings):
     with make_client(settings, []) as client:
         agents = client.get("/api/agents").json()
         names = {a["name"] for a in agents}
-        assert names == {"ceo", "cfo", "cmo", "cto", "researcher", "coordinator"}
+        assert names == {
+            "ceo", "cfo", "cmo", "cto", "researcher", "coordinator",
+            "fpa", "reporting", "revenue", "control",
+        }
+        finance = {a["name"] for a in agents if a["team"] == "finance"}
+        assert finance == {"fpa", "reporting", "revenue", "control"}
 
 
 def test_chat_websocket_streams_delegation(settings):
     responses = [
         response(
             [tool_use_block("tu_1", "delegate_to_agent",
-                            {"agent": "cfo", "task": "Total revenue last month?"})],
+                            {"agent": "cto", "task": "Which projects are at risk?"})],
             stop_reason="tool_use",
         ),
         response(
             [tool_use_block("tu_2", "sql_query",
-                            {"query": "SELECT ROUND(SUM(amount), 2) FROM transactions "
-                                      "WHERE type='revenue' GROUP BY strftime('%Y-%m', date) "
-                                      "ORDER BY strftime('%Y-%m', date) DESC LIMIT 1"})],
+                            {"query": "SELECT name, deadline FROM projects "
+                                      "WHERE status = 'at_risk'"})],
             stop_reason="tool_use",
         ),
-        response([text_block("Revenue last month per the query above.")]),
-        response([text_block("Per the CFO, revenue last month is in the query result.")]),
+        response([text_block("Two projects are at risk; see query above.")]),
+        response([text_block("Per the CTO, two projects are currently at risk.")]),
     ]
     with make_client(settings, responses) as client:
         with client.websocket_connect("/ws/chat") as ws:
@@ -70,13 +74,13 @@ def test_chat_websocket_streams_delegation(settings):
                     break
 
     types = [e["type"] for e in events]
-    assert types.count("run_started") == 2  # ceo + cfo
+    assert types.count("run_started") == 2  # ceo + cto
     assert "tool_call" in types and "tool_result" in types
     done = events[-1]
     assert done["error"] is None
     assert done["usage"]["total"] == 4 * 180
     agents_seen = {e.get("agent") for e in events if "agent" in e}
-    assert {"ceo", "cfo"} <= agents_seen
+    assert {"ceo", "cto"} <= agents_seen
 
 
 def test_chat_websocket_reports_empty_message(settings):

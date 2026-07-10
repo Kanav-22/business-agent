@@ -44,8 +44,8 @@ async def test_parallel_fan_out_to_three_specialists(settings):
         "CEO orchestrator": [
             response(
                 [
-                    tool_use_block("tu_cfo", "delegate_to_agent",
-                                   {"agent": "cfo", "task": "Summarize the P&L."}),
+                    tool_use_block("tu_coord", "delegate_to_agent",
+                                   {"agent": "coordinator", "task": "What's blocked?"}),
                     tool_use_block("tu_cmo", "delegate_to_agent",
                                    {"agent": "cmo", "task": "Best channel by CAC?"}),
                     tool_use_block("tu_cto", "delegate_to_agent",
@@ -53,15 +53,15 @@ async def test_parallel_fan_out_to_three_specialists(settings):
                 ],
                 stop_reason="tool_use",
             ),
-            response([text_block("Per the CFO… The CMO reports… Per the CTO…")]),
+            response([text_block("The Coordinator says… The CMO reports… Per the CTO…")]),
         ],
-        "CFO agent": [
+        "Workflow Coordinator": [
             response(
                 [tool_use_block("tu_1", "sql_query",
-                                {"query": "SELECT SUM(amount) FROM transactions WHERE type='revenue'"})],
+                                {"query": "SELECT title FROM tasks WHERE status='blocked'"})],
                 stop_reason="tool_use",
             ),
-            response([text_block("Revenue summarized.")]),
+            response([text_block("Four tasks are blocked.")]),
         ],
         "CMO agent": [
             response(
@@ -90,13 +90,13 @@ async def test_parallel_fan_out_to_three_specialists(settings):
     assert [s["agent"] for s in starts if s["depth"] == 0] == ["ceo"]
     ceo_run = starts[0]["run_id"]
     children = [s for s in starts if s["depth"] == 1]
-    assert {s["agent"] for s in children} == {"cfo", "cmo", "cto"}
+    assert {s["agent"] for s in children} == {"coordinator", "cmo", "cto"}
     assert all(s["parent_run_id"] == ceo_run for s in children)
 
     # every specialist ran a real query against its own allowlist
     specialist_results = [
         e for e in events
-        if e["type"] == "tool_result" and e["agent"] in {"cfo", "cmo", "cto"}
+        if e["type"] == "tool_result" and e["agent"] in {"coordinator", "cmo", "cto"}
     ]
     assert len(specialist_results) == 3
     assert not any(e["is_error"] for e in specialist_results)
@@ -106,9 +106,9 @@ async def test_parallel_fan_out_to_three_specialists(settings):
     final_ceo_call = fake.calls[-1]
     last_user = final_ceo_call["messages"][-1]
     ids = [entry["tool_use_id"] for entry in last_user["content"]]
-    assert ids == ["tu_cfo", "tu_cmo", "tu_cto"]
+    assert ids == ["tu_coord", "tu_cmo", "tu_cto"]
 
-    assert set(budget.by_agent) == {"ceo", "cfo", "cmo", "cto"}
+    assert set(budget.by_agent) == {"ceo", "coordinator", "cmo", "cto"}
 
 
 async def test_coordinator_creates_validated_task(settings, tmp_path):
@@ -237,21 +237,21 @@ async def test_activity_feed_built_from_logs(settings):
         "CEO orchestrator": [
             response(
                 [tool_use_block("tu_1", "delegate_to_agent",
-                                {"agent": "cfo", "task": "Count customers"})],
+                                {"agent": "cto", "task": "Count projects"})],
                 stop_reason="tool_use",
             ),
-            response([text_block("Per the CFO: counted.")]),
+            response([text_block("Per the CTO: counted.")]),
         ],
-        "CFO agent": [
+        "CTO agent": [
             response(
-                [tool_use_block("tu_2", "sql_query", {"query": "SELECT COUNT(*) FROM customers"})],
+                [tool_use_block("tu_2", "sql_query", {"query": "SELECT COUNT(*) FROM projects"})],
                 stop_reason="tool_use",
             ),
             response([text_block("Counted.")]),
         ],
     }
     service, _ = make_service(settings, responses)
-    result, _, _ = await collect_events(service, "how many customers?")
+    result, _, _ = await collect_events(service, "how many projects?")
     assert result.error is None
 
     runs = get_activity(settings.logs_dir, limit=10)
@@ -259,11 +259,11 @@ async def test_activity_feed_built_from_logs(settings):
     by_agent = {r["agent"]: r for r in runs}
     assert by_agent["ceo"]["status"] == "completed"
     assert by_agent["ceo"]["tools"] == [{"tool": "delegate_to_agent", "count": 1}]
-    assert by_agent["cfo"]["parent_run_id"] == by_agent["ceo"]["run_id"]
-    assert by_agent["cfo"]["tools"] == [{"tool": "sql_query", "count": 1}]
+    assert by_agent["cto"]["parent_run_id"] == by_agent["ceo"]["run_id"]
+    assert by_agent["cto"]["tools"] == [{"tool": "sql_query", "count": 1}]
     # per-run usage and cost are populated (2 scripted calls each: 240 in / 120 out)
-    assert by_agent["cfo"]["input_tokens"] == 240
-    assert by_agent["cfo"]["output_tokens"] == 120
-    assert by_agent["cfo"]["cost_usd"] > 0
+    assert by_agent["cto"]["input_tokens"] == 240
+    assert by_agent["cto"]["output_tokens"] == 120
+    assert by_agent["cto"]["cost_usd"] > 0
     # newest first
     assert runs[0]["started_at"] >= runs[1]["started_at"]

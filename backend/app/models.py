@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -124,3 +124,20 @@ class Meta(Base):
 
     key: Mapped[str] = mapped_column(String(40), primary_key=True)
     value: Mapped[str] = mapped_column(String(200))
+
+
+class Report(Base):
+    """Generated documents. kind: 'report' | 'briefing' | 'control_check'.
+
+    Reports are artifacts, not source data — reseeding the synthetic dataset
+    leaves them untouched.
+    """
+
+    __tablename__ = "reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(20), index=True)
+    agent: Mapped[str] = mapped_column(String(30))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, index=True)
+    content: Mapped[str] = mapped_column(Text)

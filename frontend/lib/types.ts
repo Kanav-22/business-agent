@@ -41,6 +41,19 @@ export interface ActivityRun {
   tools: { tool: string; count: number }[];
 }
 
+export interface ReportSummary {
+  id: number;
+  title: string;
+  kind: "report" | "briefing" | "control_check";
+  agent: string;
+  created_at: string;
+  excerpt: string;
+}
+
+export interface ReportDetail extends Omit<ReportSummary, "excerpt"> {
+  content: string;
+}
+
 /** Events streamed over /ws/chat while the delegation tree runs. */
 export interface AgentEvent {
   type:

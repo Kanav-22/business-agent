@@ -28,4 +28,5 @@ def settings(seeded_db, tmp_path) -> Settings:
     s = Settings()
     s.db_path = db_path
     s.logs_dir = tmp_path / "logs"
+    s.scheduler_enabled = False  # tests trigger jobs directly
     return s

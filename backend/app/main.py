@@ -6,14 +6,18 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi.responses import PlainTextResponse
 
 from app.api.activity import get_activity
 from app.api.kpis import get_kpis, get_meta, get_monthly_series
+from app.api.reports import get_report, list_reports
 from app.config import Settings
 from app.data.synthetic import SyntheticProvider
 from app.db import make_engine
+from app.scheduler import JOBS, create_scheduler
 
 log = logging.getLogger("business-agent")
 
@@ -34,7 +38,17 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
         summary = SyntheticProvider(seed=settings.data_seed).provision(engine)
         if not summary.get("skipped"):
             log.info("Seeded synthetic data: %s", summary)
+        scheduler = None
+        if settings.scheduler_enabled:
+            scheduler = create_scheduler(service, engine)
+            scheduler.start()
+            log.info(
+                "Scheduler started: %s",
+                ", ".join(str(j) for j in scheduler.get_jobs()),
+            )
         yield
+        if scheduler is not None:
+            scheduler.shutdown(wait=False)
 
     app = FastAPI(title="AI Business OS", lifespan=lifespan)
     app.state.settings = settings
@@ -78,7 +92,7 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
 
     @app.get("/api/agents")
     def agents():
-        roster = [service.ceo, *service.specialists.values()]
+        finance = {a.config.name for a in service.finance_team.values()}
         return [
             {
                 "name": a.config.name,
@@ -86,9 +100,66 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
                 "description": a.config.description,
                 "color": a.config.color,
                 "tools": a.config.tools,
+                "team": "finance" if a.config.name in finance else None,
             }
-            for a in roster
+            for a in service.all_agents()
         ]
+
+    # ------------------------------------------------------------- reports
+
+    @app.get("/api/reports")
+    def reports(kind: str | None = None, limit: int = 50):
+        return list_reports(engine, kind=kind, limit=max(1, min(limit, 200)))
+
+    @app.get("/api/reports/{report_id}")
+    def report_detail(report_id: int):
+        report = get_report(engine, report_id)
+        if report is None:
+            raise HTTPException(status_code=404, detail="report not found")
+        return report
+
+    @app.get("/api/reports/{report_id}/download")
+    def report_download(report_id: int):
+        report = get_report(engine, report_id)
+        if report is None:
+            raise HTTPException(status_code=404, detail="report not found")
+        filename = f"report-{report_id}.md"
+        return PlainTextResponse(
+            report["content"],
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    @app.get("/api/briefing")
+    def latest_briefing():
+        briefings = list_reports(engine, kind="briefing", limit=1)
+        if not briefings:
+            return {"report": None}
+        return {"report": get_report(engine, briefings[0]["id"])}
+
+    # ---------------------------------------------------------------- jobs
+
+    jobs_in_flight: set[str] = set()
+
+    @app.post("/api/jobs/{job_name}/run", status_code=202)
+    async def run_job(job_name: str):
+        job = JOBS.get(job_name)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"unknown job {job_name!r}")
+        if job_name in jobs_in_flight:
+            raise HTTPException(status_code=409, detail=f"{job_name} is already running")
+
+        async def runner():
+            try:
+                await job(service, engine)
+            except Exception:
+                log.exception("job %s failed", job_name)
+            finally:
+                jobs_in_flight.discard(job_name)
+
+        jobs_in_flight.add(job_name)
+        asyncio.get_running_loop().create_task(runner())
+        return {"started": True, "job": job_name}
 
     # ------------------------------------------------------------- WebSocket
 

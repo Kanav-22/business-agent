@@ -16,12 +16,10 @@ const NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/chat", label: "Chat with CEO", icon: MessageSquare },
   { href: "/activity", label: "Agent Activity", icon: Activity },
+  { href: "/reports", label: "Reports", icon: FileText },
 ];
 
-const UPCOMING = [
-  { label: "Reports", icon: FileText, phase: "Phase 3" },
-  { label: "Data", icon: Database, phase: "Phase 5" },
-];
+const UPCOMING = [{ label: "Data", icon: Database, phase: "Phase 5" }];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -75,9 +73,10 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto px-3 text-[11px] leading-relaxed text-slate-600">
-        Phase 2 — full C-suite:
+        Phase 3 — finance sub-team
         <br />
-        CFO · CMO · CTO · Researcher · Coordinator
+        (FP&A · Reporting · Revenue · Control)
+        <br />+ Monday auto-briefings
       </div>
     </aside>
   );

@@ -3,30 +3,74 @@
 import { useEffect, useState } from "react";
 import {
   Banknote,
+  ChevronDown,
+  ChevronUp,
   Flame,
   Hourglass,
   ListTodo,
+  Newspaper,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
+import { Markdown } from "@/components/markdown";
 import { RevenueChart } from "@/components/revenue-chart";
 import { fmtMoney, fmtMonthLabel, getJson } from "@/lib/api";
-import type { Kpis, MonthPoint } from "@/lib/types";
+import type { Kpis, MonthPoint, ReportDetail } from "@/lib/types";
+
+function BriefingCard({ briefing }: { briefing: ReportDetail | null }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!briefing) {
+    return (
+      <div className="mb-6 flex items-center gap-3 rounded-xl border border-dashed border-slate-800 px-4 py-3 text-xs text-slate-500">
+        <Newspaper size={14} />
+        No weekly briefing yet — one is generated every Monday 06:20, or trigger it
+        from the Reports page.
+      </div>
+    );
+  }
+  return (
+    <div className="mb-6 rounded-xl border border-violet-900/50 bg-violet-950/20 p-4">
+      <button
+        onClick={() => setExpanded((e) => !e)}
+        className="flex w-full items-center gap-2 text-left"
+      >
+        <Newspaper size={14} className="text-violet-400" />
+        <span className="text-sm font-medium text-violet-200">{briefing.title}</span>
+        <span className="ml-auto flex items-center gap-1 text-[11px] text-slate-500">
+          {new Date(briefing.created_at).toLocaleDateString()}
+          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </span>
+      </button>
+      <div
+        className={
+          expanded ? "mt-3" : "mt-3 max-h-28 overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+        }
+      >
+        <Markdown>{briefing.content.replace(/^# .*\n/, "")}</Markdown>
+      </div>
+    </div>
+  );
+}
 
 export default function OverviewPage() {
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [series, setSeries] = useState<MonthPoint[] | null>(null);
+  const [briefing, setBriefing] = useState<ReportDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       getJson<Kpis>("/api/kpis"),
       getJson<MonthPoint[]>("/api/chart/revenue-expenses"),
+      getJson<{ report: ReportDetail | null }>("/api/briefing").catch(() => ({
+        report: null,
+      })),
     ])
-      .then(([k, s]) => {
+      .then(([k, s, b]) => {
         setKpis(k);
         setSeries(s);
+        setBriefing(b.report);
       })
       .catch((e) => setError(String(e)));
   }, []);
@@ -74,6 +118,8 @@ export default function OverviewPage() {
           </span>
         </div>
       </div>
+
+      <BriefingCard briefing={briefing} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard

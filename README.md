@@ -4,11 +4,15 @@ A multi-agent system that runs a virtual company: a **CEO orchestrator** delegat
 C-suite specialist agents operating on real (currently synthetic) business data, surfaced
 through a live dashboard. Built per [`BUSINESS_AGENT_SPEC.md`](./BUSINESS_AGENT_SPEC.md).
 
-**Phase 2 (this repo state):** the full C-suite. The CEO orchestrator fans out to
-**CFO, CMO, CTO, Researcher and Workflow Coordinator** — in parallel when a question
-spans domains — over a reconcilable synthetic dataset for "Lumina Labs" (a fictional
-12-person SaaS company). Dashboard: Overview (KPIs + revenue/expense chart), Chat
-(live delegation tree) and Agent Activity (every run with tools, tokens and cost).
+**Phase 3 (this repo state):** the org chart goes two levels deep and the company
+runs itself on a schedule. The CEO orchestrator fans out to **CFO, CMO, CTO,
+Researcher and Workflow Coordinator** — in parallel when a question spans domains —
+and the CFO now leads its own sub-team (**FP&A, Reporting, Revenue, Control**). Every
+Monday morning, APScheduler runs the Control agent's reconciliation + anomaly check
+(06:00) and a CEO briefing that fans out across the C-suite (06:20) — both land in
+the reports library without anyone asking. Dashboard: Overview (KPIs + chart + the
+latest weekly briefing), Chat (live delegation tree), Agent Activity (runs with
+tools, tokens, cost) and Reports (read/download, run jobs on demand).
 
 ```
 frontend/  Next.js 14 + TypeScript + Tailwind + Recharts
@@ -61,9 +65,14 @@ CEO synthesize a brief that attributes every finding to its source agent. Then c
 **Agent Activity** for the run feed with per-run token usage and cost. Verify numbers
 against `backend/data/lumina.db` — the dataset is deterministic and reconcilable.
 
-Other good demos: *"Which channel has the best CAC?"* (CMO), *"Are we on track for
-the v2 launch?"* (CTO), *"What's blocked this week?"* (Coordinator), *"What are
-competitors pricing at?"* (Researcher, uses Anthropic server-side web search).
+Other good demos: *"Which invoices are overdue, and any unusual expenses this
+month?"* (CFO → Revenue + Control in parallel), *"Produce a P&L report for last
+month"* (CFO → Reporting, lands on the Reports page), *"Which channel has the best
+CAC?"* (CMO), *"Are we on track for the v2 launch?"* (CTO), *"What's blocked this
+week?"* (Coordinator), *"What are competitors pricing at?"* (Researcher, uses
+Anthropic server-side web search). On the **Reports** page you can trigger the
+Monday jobs on demand ("Run control check" / "Generate briefing") instead of
+waiting for the schedule.
 
 ## Tests
 
@@ -86,7 +95,10 @@ Covers:
 - **Phase 2** — parallel fan-out to 3 specialists (results return in one message, in
   order), per-agent table allowlists, validated `create_task` writes, server-side web
   tool declarations, `pause_turn` resumption, activity feed assembly from logs.
-- **API** — KPI/chart/activity endpoints and the chat WebSocket stream.
+- **Phase 3** — two-level delegation (CEO→CFO→FP&A) with parenting/depth asserts,
+  `report_writer` validation and write-through, scheduled job functions saving
+  control checks and briefings, reports API + download, manual job triggers.
+- **API** — KPI/chart/activity/reports endpoints and the chat WebSocket stream.
 
 ## Architecture notes (Phase 1)
 
@@ -101,9 +113,19 @@ Covers:
 - **Parallel delegation**: all tool calls in one model turn run concurrently
   (`asyncio.gather`), so a broad question fans out to several specialists at once;
   their results return to the CEO in a single message, in call order.
-- **The Coordinator's `create_task` is the only write path**, and it is deterministic
-  code that validates department/status/dates/assignee before inserting — agents
-  never write to the database directly.
+- **The CFO mirrors the CEO one level down** (Phase 3): it holds only
+  `delegate_to_agent` over its sub-team — FP&A (analysis/forecasts + `python_calc`),
+  Reporting (`report_writer`), Revenue (invoices/AR/MRR movements), Control
+  (reconciliation + anomaly checks) — and synthesizes with attribution. Depth is
+  capped at 2 (CEO→CFO→sub-agent).
+- **Agent writes stay behind validation**: `create_task` (Coordinator) and
+  `report_writer` (Reporting) are deterministic code that validates every field
+  before inserting — agents never write to the database directly.
+- **Scheduled operations** (`backend/app/scheduler.py`): APScheduler cron jobs run
+  the Control check Mondays 06:00 and the CEO briefing 06:20 (server timezone);
+  their runs stream to the JSONL logs (so they appear on the Activity page) and
+  their outputs are persisted to the reports library. `POST /api/jobs/{name}/run`
+  triggers either on demand; disable with `SCHEDULER_ENABLED=0`.
 - **Deterministic code validates and executes** — agents never write to the DB. SQL is
   forced read-only at the sqlite level (URI `mode=ro` + authorizer callback), not by
   prompt. `python_calc` runs in an isolated subprocess with rlimits and a restricted
@@ -127,11 +149,11 @@ Covers:
 | `BUSINESS_AGENT_DB` | `backend/data/lumina.db` | SQLite path |
 | `BUSINESS_AGENT_LOGS` | `backend/logs` | JSONL decision logs |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated |
+| `SCHEDULER_ENABLED` | `1` | Monday auto-jobs (control check + briefing) |
 | `NEXT_PUBLIC_API_URL` (frontend) | `http://localhost:8000` | Backend base URL |
 
 ## Roadmap
 
-Phase 3: CFO sub-team (FP&A, Reporting, Revenue, Control), scheduled reconciliation
-and weekly briefings (APScheduler), Reports page · Phase 4: Content/Researcher
-schedules + approvals inbox for outward-facing work · Phase 5: real data providers,
+Phase 4: Content sub-agent + scheduled competitor scans + approvals inbox for
+outward-facing work · Phase 5: real data providers (CSV/Stripe/accounting),
 multi-tenant, Postgres. See the spec for definitions of done.

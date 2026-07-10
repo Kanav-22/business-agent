@@ -3,6 +3,7 @@ uvicorn[standard]>=0.30,<1
 sqlalchemy>=2.0,<3
 anthropic>=0.40
 pydantic>=2.7,<3
+apscheduler>=3.10,<4
 
 # dev / test
 pytest>=8.0

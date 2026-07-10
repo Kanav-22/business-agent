@@ -258,10 +258,11 @@ function ExchangeView({ exchange }: { exchange: Exchange }) {
 /* ------------------------------------------------------------------- page */
 
 const SUGGESTIONS = [
+  "How is the business doing?",
   "What was our profit last month and what's our runway?",
-  "How is MRR trending over the last 6 months?",
-  "What are our three biggest expense categories this year?",
-  "How much do we spend on payroll versus everything else?",
+  "Which invoices are overdue, and any unusual expenses this month?",
+  "Produce a P&L report for last month",
+  "Which channel has the best CAC, and what's blocked this week?",
 ];
 
 export function Chat() {

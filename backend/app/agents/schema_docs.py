@@ -46,6 +46,9 @@ FINANCE_TABLES = ["transactions", "customers", "invoices", "employees", "meta"]
 MARKETING_TABLES = ["campaigns", "customers", "meta"]
 ENGINEERING_TABLES = ["projects", "tasks", "employees", "meta"]
 WORKFLOW_TABLES = ["tasks", "employees", "meta"]
+# Finance sub-team (Phase 3)
+REVENUE_TABLES = ["invoices", "customers", "meta"]
+CONTROL_TABLES = ["transactions", "customers", "invoices", "employees", "campaigns", "meta"]
 
 
 def build_schema_doc(tables: list[str]) -> str:

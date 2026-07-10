@@ -26,6 +26,8 @@ class Settings:
     # Prices used for the Activity page cost estimates (claude-sonnet-4-6).
     input_price_per_mtok: float = 3.0
     output_price_per_mtok: float = 15.0
+    # Weekly Monday-morning jobs (control check + CEO briefing).
+    scheduler_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -42,6 +44,11 @@ class Settings:
         )
         s.output_price_per_mtok = float(
             os.environ.get("AGENT_PRICE_OUTPUT_MTOK", s.output_price_per_mtok)
+        )
+        s.scheduler_enabled = os.environ.get("SCHEDULER_ENABLED", "1").lower() not in (
+            "0",
+            "false",
+            "no",
         )
         if origins := os.environ.get("CORS_ORIGINS"):
             s.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
