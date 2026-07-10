@@ -27,6 +27,8 @@ dashboard KPIs and all tests work without one).
 
 ### 1. Backend
 
+macOS / Linux:
+
 ```bash
 cd backend
 python3 -m venv .venv
@@ -38,6 +40,18 @@ python3 -m venv .venv
 # Run the API (chat needs the key; KPIs work without it)
 export ANTHROPIC_API_KEY=sk-ant-...
 .venv/bin/uvicorn app.main:app --reload --port 8000
+```
+
+Windows (PowerShell — note `Scripts`, not `bin`; no `&&` in PowerShell 5.1, run
+lines one at a time; no venv activation needed):
+
+```powershell
+cd backend
+py -3 -m venv .venv        # or: python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python scripts\seed.py
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+.venv\Scripts\uvicorn app.main:app --reload --port 8000
 ```
 
 The server auto-seeds on startup if the database is missing.
