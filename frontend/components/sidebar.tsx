@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
   Activity,
+  ClipboardList,
   Database,
   FileText,
   Inbox,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/approvals", label: "Approvals", icon: Inbox },
   { href: "/venture", label: "Venture Studio", icon: Rocket },
+  { href: "/onboarding", label: "Business Setup", icon: ClipboardList },
 ];
 
 const UPCOMING = [{ label: "Data", icon: Database, phase: "Phase 5" }];

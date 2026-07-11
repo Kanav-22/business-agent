@@ -11,7 +11,7 @@ import asyncio
 from sqlalchemy.engine import Engine
 
 from app.agents.budget import TokenBudget
-from app.api.reports import save_report
+from app.api.reports import list_reports, save_report
 from app.api.venture import (
     get_idea,
     list_ideas,
@@ -19,6 +19,7 @@ from app.api.venture import (
     save_memory_record,
 )
 from app.venture.founder import founder_context
+from app.venture.intake import business_context, get_business_profile
 from app.venture.scoring import VERDICT_LABELS, render_scoreboard
 
 
@@ -30,9 +31,12 @@ def _brief(topic: str, instructions: str, engine: Engine) -> str:
     """Build a workflow brief with the demo-mode topic marker first."""
     parts = [f"TOPIC: {topic}\n{instructions.strip()}"]
     founder = founder_context(engine)
+    business = business_context(engine)
     memories = memory_context(engine, limit=8)
     if founder:
         parts.append(founder)
+    if business:
+        parts.append(business)
     if memories:
         parts.append(memories)
     return "\n\n".join(parts)
@@ -382,7 +386,106 @@ async def run_idea_score(service, engine, topic: str, *, on_event=None) -> int:
     )
 
 
+async def run_intake_review(service, engine, topic: str, *, on_event=None) -> int:
+    """Have finance, demand, and risk analysts study the stored business intake."""
+    del topic  # The durable profile, not caller-supplied text, names this review.
+    profile = get_business_profile(engine)
+    business_name = profile.get("name", "").strip() or "our business"
+    existing_reports = list_reports(engine, kind="intake", limit=20)
+    report_list = (
+        "\n".join(
+            f"- Report #{report['id']} — {report['title']}: {report['excerpt']}"
+            for report in existing_reports
+        )
+        if existing_reports
+        else "- No intake documents have been uploaded yet."
+    )
+    shared_instructions = (
+        "Study the complete owner-provided BUSINESS PROFILE in this brief and the "
+        "existing intake report excerpts below. Distinguish stated facts from "
+        "estimates and assumptions. Return exactly these sections: What I learned / "
+        "Assumptions to validate (numbered) / Red flags.\n\n"
+        f"EXISTING INTAKE REPORTS:\n{report_list}"
+    )
+    budget = TokenBudget(limit=service.settings.token_budget)
+    event_sink = on_event or _noop_event
+    cfo, cmo, risk = await asyncio.gather(
+        _run(
+            service,
+            "venture_cfo",
+            _brief(
+                business_name,
+                "Review the financial model, cash timing, pricing, costs, margins, "
+                f"and missing numbers.\n\n{shared_instructions}",
+                engine,
+            ),
+            budget,
+            event_sink,
+        ),
+        _run(
+            service,
+            "venture_cmo",
+            _brief(
+                business_name,
+                "Review customers, buying reasons, positioning, acquisition, and "
+                f"market evidence.\n\n{shared_instructions}",
+                engine,
+            ),
+            budget,
+            event_sink,
+        ),
+        _run(
+            service,
+            "risk",
+            _brief(
+                business_name,
+                "Review operational, financial, regulatory, reputational, and "
+                f"concentration risks.\n\n{shared_instructions}",
+                engine,
+            ),
+            budget,
+            event_sink,
+        ),
+    )
+
+    content = (
+        f"## CFO — Financial review\n\n{cfo}\n\n"
+        f"## CMO — Customer and market review\n\n{cmo}\n\n"
+        f"## Risk Officer — Risk review\n\n{risk}\n"
+    )
+    report_id = save_report(
+        engine,
+        title=f"Business intake review: {business_name}",
+        content=content,
+        agent="coo",
+        kind="intake",
+    )
+    report_ref = f"\n\nFull report: #{report_id}."
+    for category, label, output, source_agent in (
+        ("financial_assumption", "Financial intake", cfo, "venture_cfo"),
+        ("customer_research", "Customer intake", cmo, "venture_cmo"),
+        ("risk", "Risk intake", risk, "risk"),
+    ):
+        save_memory_record(
+            engine,
+            category=category,
+            title=f"{label}: {business_name}"[:200],
+            content=f"{output[:1500].rstrip()}{report_ref}",
+            source_agent=source_agent,
+            related_idea=business_name,
+        )
+    return report_id
+
+
 VENTURE_WORKFLOWS: dict[str, dict] = {
+    "intake_review": {
+        "run": run_intake_review,
+        "label": "Business intake review",
+        "description": (
+            "CFO, CMO, and Risk review the stored business profile in parallel; "
+            "a stored business name overrides the submitted topic."
+        ),
+    },
     "debate": {
         "run": run_debate,
         "label": "Board debate",

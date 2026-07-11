@@ -22,6 +22,7 @@ const KIND_META: Record<
   failure_sim: { label: "Failure sim", className: "border-orange-800 bg-orange-950/40 text-orange-300" },
   interviews: { label: "Interviews", className: "border-teal-800 bg-teal-950/40 text-teal-300" },
   idea_score: { label: "Idea score", className: "border-emerald-800 bg-emerald-950/40 text-emerald-300" },
+  intake: { label: "Business intake", className: "border-indigo-800 bg-indigo-950/40 text-indigo-300" },
   eval: { label: "Eval", className: "border-cyan-800 bg-cyan-950/40 text-cyan-300" },
 };
 

@@ -54,6 +54,7 @@ export interface ReportSummary {
     | "failure_sim"
     | "interviews"
     | "idea_score"
+    | "intake"
     | "eval";
   agent: string;
   created_at: string;
@@ -64,6 +65,38 @@ export interface VentureWorkflow {
   name: string;
   label: string;
   description: string;
+}
+
+export type IntakeQuestionType = "short" | "long" | "number" | "choice";
+
+export interface IntakeQuestion {
+  key: string;
+  section: string;
+  question: string;
+  type: IntakeQuestionType;
+  choices?: string[];
+  required: boolean;
+  why: string;
+}
+
+export interface IntakeUpload {
+  key: string;
+  label: string;
+  accepts: string;
+  purpose: string;
+}
+
+export interface IntakeQuestionsResponse {
+  sections: string[];
+  questions: IntakeQuestion[];
+  uploads: IntakeUpload[];
+}
+
+export type BusinessProfile = Record<string, string>;
+
+export interface IntakeUploadResponse {
+  stored: boolean;
+  next?: string;
 }
 
 export interface IdeaSummary {

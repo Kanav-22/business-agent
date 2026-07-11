@@ -240,3 +240,13 @@ class EvalResult(Base):
     passed: Mapped[bool] = mapped_column(Boolean)
     details_json: Mapped[str] = mapped_column(Text)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, index=True)
+
+
+class BusinessProfile(Base):
+    """Owner-provided business facts collected by the intake interview."""
+
+    __tablename__ = "business_profile"
+
+    key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime)
