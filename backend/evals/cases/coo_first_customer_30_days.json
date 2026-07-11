@@ -1,0 +1,77 @@
+{
+  "id": "coo_first_customer_30_days",
+  "agent": "coo",
+  "title": "Thirty-day plan to win a first logistics customer",
+  "scenario": "TOPIC: Turn a logistics automation idea into a first customer in 30 days\nA solo founder with a full-time job has 15 focused hours per week, basic no-code skills, ₹40,000, and no audience. The offer would automate proof-of-delivery follow-up for small trucking fleets. Create a 30-day execution plan to reach one paying pilot. Work backwards from the deadline, include customer contact in week one, give every step one owner and a definition of done, surface dependencies and lead times with realistic buffers, set weekly checkpoint targets, define numeric kill criteria with dates, and name the top execution risk with mitigation.",
+  "expected_elements": [
+    {
+      "name": "goal and deadline",
+      "pattern": "execution plan\\s*:.*(?:30 days?|deadline)|goal\\s*:.*deadline",
+      "weight": 1.0
+    },
+    {
+      "name": "capacity assumption",
+      "pattern": "capacity assumption\\s*:|15\\s*(?:focused )?hours?\\s*(?:per|/)\\s*week",
+      "weight": 1.0
+    },
+    {
+      "name": "week-one customer contact",
+      "pattern": "week\\s*1\\s*:.*(?:call|interview|outreach|prospect|customer)",
+      "weight": 1.5
+    },
+    {
+      "name": "owners and definitions of done",
+      "pattern": "owner.*definition of done|founder\\s*(?:—|->|-)\\s*.*(?:done\\s*=|definition of done)",
+      "weight": 1.5
+    },
+    {
+      "name": "sequenced later weeks",
+      "pattern": "week\\s*2[\\s\\S]*week\\s*(?:3|3-4|4)",
+      "weight": 1.0
+    },
+    {
+      "name": "dependencies and buffered lead times",
+      "pattern": "dependencies? (?:&|and) lead times?\\s*:|lead time|30% buffer",
+      "weight": 1.0
+    },
+    {
+      "name": "weekly checkpoint targets",
+      "pattern": "weekly checkpoint metric\\s*:|checkpoint.*(?:target|week)",
+      "weight": 1.0
+    },
+    {
+      "name": "dated kill criteria",
+      "pattern": "kill criteria\\s*:.*(?:day|week|date)|(?:stop|pivot) if",
+      "weight": 1.0
+    },
+    {
+      "name": "top risk and mitigation",
+      "pattern": "top execution risk\\s*:.*mitigation|top risk\\s*:",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "customer contact delayed",
+      "pattern": "build (?:the )?(?:product|MVP) first[\\s\\S]{0,120}(?:talk to|contact) customers",
+      "penalty": 1.5
+    },
+    {
+      "name": "unrealistic full-time capacity",
+      "pattern": "40\\s*(?:hours?|h)\\s*(?:per|/)\\s*week|full-time founder",
+      "penalty": 1.5
+    },
+    {
+      "name": "generic execution advice",
+      "pattern": "start with market research.*build.*market|stay focused and execute",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 8,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Fit the workload to the founder's actual availability.",
+    "Put contact with prospective fleet operators at the beginning.",
+    "Make failure visible early enough to change course."
+  ]
+}

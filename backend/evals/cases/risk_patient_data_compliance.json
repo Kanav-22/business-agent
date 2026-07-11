@@ -1,0 +1,67 @@
+{
+  "id": "risk_patient_data_compliance",
+  "agent": "risk",
+  "title": "Cross-border patient-data compliance landmine",
+  "scenario": "TOPIC: Assess launch risk for a clinic consultation transcription service\nA Bengaluru startup plans to sell an AI consultation-note service to small clinics in California. Clinic staff will upload recorded patient conversations; audio and transcripts will be stored indefinitely in an India-hosted database and reviewed by freelance annotators using shared accounts. The founder assumes HIPAA does not apply because the startup is 'only a software vendor' and wants to launch to 50 clinics next month without changing the workflow. Rank the risks worst-first, state every jurisdiction assumed, identify the fatal-if-ignored issue, give concrete mitigations with cost, time, and residual risk, identify targeted professional review, and make an explicit overall proceed / proceed-with-mitigations / do-not-proceed verdict. End with the risk-triage disclaimer.",
+  "expected_elements": [
+    {
+      "name": "jurisdiction stated",
+      "pattern": "jurisdiction assumed\\s*:|(?:India|Indian|DPDP)[\\s\\S]{0,200}(?:California|United States|US|HIPAA)|(?:California|United States|US|HIPAA)[\\s\\S]{0,200}(?:India|Indian|DPDP)",
+      "weight": 2.0
+    },
+    {
+      "name": "risks ranked worst-first",
+      "pattern": "risk assessment\\s*:|(?:^|\\n)\\s*1[.)].*(?:legal|regulatory|privacy|security)",
+      "weight": 2.0
+    },
+    {
+      "name": "patient-data compliance landmine",
+      "pattern": "\\bHIPAA\\b|protected health information|\\bPHI\\b|business associate agreement|\\bBAA\\b|DPDP Act",
+      "weight": 2.0
+    },
+    {
+      "name": "actionable mitigation and residual risk",
+      "pattern": "mitigation\\s*:.*(?:cost|₹|\\$|days?|weeks?)[\\s\\S]{0,180}residual risk|residual risk",
+      "weight": 1.0
+    },
+    {
+      "name": "fatal issue and targeted review",
+      "pattern": "fatal-if-ignored\\s*:|requires professional review\\s*:|healthcare (?:privacy )?(?:lawyer|counsel)",
+      "weight": 1.0
+    },
+    {
+      "name": "explicit overall verdict",
+      "pattern": "overall\\s*:\\s*(?:proceed with mitigations|proceed|do not proceed)\\b",
+      "weight": 5.0
+    },
+    {
+      "name": "risk triage disclaimer",
+      "pattern": "this is risk triage, not legal advice",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "accepts vendor exemption",
+      "pattern": "HIPAA does not apply(?![\\s\\S]{0,60}(?:false|wrong|incorrect|unsafe|dangerous|unsupported|myth))|only a software vendor(?![\\s\\S]{0,60}(?:false|wrong|incorrect|not (?:a |an )?(?:valid|safe)|does not exempt))|not a covered entity,? so",
+      "penalty": 2.5
+    },
+    {
+      "name": "blanket lawyer handoff",
+      "pattern": "consult a lawyer and follow all applicable|hire a law firm to handle everything",
+      "penalty": 1.5
+    },
+    {
+      "name": "unranked generic warning",
+      "pattern": "there (?:could|may) be some (?:legal|compliance) risks",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 7.0,
+  "improvement_suggestions": [
+    "Map the cross-border duties before evaluating less severe exposures.",
+    "Replace indefinite retention and shared access with concrete safeguards.",
+    "Close with an actionable go-or-no-go call rather than a blanket referral."
+  ]
+}

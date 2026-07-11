@@ -1,0 +1,72 @@
+{
+  "id": "sales_cold_email_pilot",
+  "agent": "sales",
+  "title": "Cold email for a proof-free clinic pilot",
+  "scenario": "TOPIC: Write a concise cold email for a clinic no-show pilot\nWrite a cold email to the owner of a two-doctor dental clinic whose receptionist manually confirms appointments by phone. The founder offers automated reminders set up in seven days for ₹6,000 per month. There are no customers, testimonials, or measured results yet. The email must use a short subject line, make only one low-friction ask, replace absent proof with a meaningful risk reversal, and include an A/B subject variant. Also state the persona, full offer, why the copy works, and objections handled. Do not invent performance statistics.",
+  "expected_elements": [
+    {
+      "name": "specific persona",
+      "pattern": "persona\\s*:.*(?:dental|clinic|receptionist)",
+      "weight": 1.0
+    },
+    {
+      "name": "complete offer",
+      "pattern": "offer\\s*:|automated reminders?|appointment reminders?",
+      "weight": 1.0
+    },
+    {
+      "name": "subject line",
+      "pattern": "subject\\s*:\\s*[^\\n]{2,60}",
+      "weight": 1.5
+    },
+    {
+      "name": "single low-friction CTA",
+      "pattern": "worth a (?:brief|quick|10-minute|ten-minute) (?:call|chat)|reply (?:yes|interested)|open to a (?:brief|quick) (?:call|chat)",
+      "weight": 1.5
+    },
+    {
+      "name": "risk reversal without fake proof",
+      "pattern": "free (?:pilot|trial)|no charge|don't pay|do not pay|money[- ]back|guarantee",
+      "weight": 2.0
+    },
+    {
+      "name": "objections pre-handled",
+      "pattern": "objections? pre-?handled\\s*:|objection\\s*(?:→|->|:)",
+      "weight": 1.0
+    },
+    {
+      "name": "why it works",
+      "pattern": "why this works\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "A/B variant",
+      "pattern": "A/B variant\\s*:|variant B\\s*:|alternative subject\\s*:",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "fabricated proof",
+      "pattern": "our customers|clinics (?:like yours )?(?:save|reduce|increase) \\d|proven to",
+      "penalty": 2.0
+    },
+    {
+      "name": "multiple asks",
+      "pattern": "(?:reply|email me).*(?:book|visit|download)|(?:book a call).*(?:visit|reply|download)",
+      "penalty": 1.5
+    },
+    {
+      "name": "hype-led copy",
+      "pattern": "AI-powered revolution|transform your clinic|unprecedented",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 4,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Open with the receptionist's daily frustration rather than product features.",
+    "Ask the reader to take only one easy next action.",
+    "Use a founder-funded trial in place of unsupported social proof."
+  ]
+}

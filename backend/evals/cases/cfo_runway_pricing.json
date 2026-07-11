@@ -1,0 +1,62 @@
+{
+  "id": "cfo_runway_pricing",
+  "agent": "cfo",
+  "title": "Runway and pricing stress test for an agency-to-SaaS move",
+  "scenario": "TOPIC: Stress-test the finances of moving an automation agency to SaaS\nA founder has ₹12 lakh cash, agency revenue of ₹3 lakh per month, and ₹2.4 lakh monthly cash expenses. She wants to pause client sales for three months, spend ₹6 lakh building SaaS, charge ₹15,000 per month, and reach 40 customers by month six. Customer invoices would be collected net 30 while contractor bills are due immediately. Critique the financial plan, rank the assumptions that could kill it, expose missing numbers and cash-timing risk, propose the cheapest validation test with cost and duration, and end with a fund / fund-with-conditions / do-not-fund verdict.",
+  "expected_elements": [
+    {
+      "name": "ranked financial objections",
+      "pattern": "financial objections?\\s*:|(?:^|\\n)\\s*1[.)].*(?:assumption|untested|impact)",
+      "weight": 1.5
+    },
+    {
+      "name": "runway or burn arithmetic",
+      "pattern": "runway|burn(?: rate)?|cash balance",
+      "weight": 1.5
+    },
+    {
+      "name": "cash timing",
+      "pattern": "cash timing|net\\s*30|receivables?|collection|working capital",
+      "weight": 1.5
+    },
+    {
+      "name": "unit economics",
+      "pattern": "unit economics|gross margin|CAC|payback|contribution margin",
+      "weight": 1.5
+    },
+    {
+      "name": "missing numbers",
+      "pattern": "numbers? (?:the plan is )?missing\\s*:|missing (?:numbers|inputs|assumptions)",
+      "weight": 1.0
+    },
+    {
+      "name": "cheap validation test",
+      "pattern": "cheapest (?:way to )?validate|pre-?sell|paid pilot",
+      "weight": 1.5
+    },
+    {
+      "name": "explicit funding verdict",
+      "pattern": "verdict\\s*:\\s*(?:fund|fund with conditions|do not fund)",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "unsupported optimism",
+      "pattern": "financials look (?:good|reasonable|strong)|revenue should grow",
+      "penalty": 1.5
+    },
+    {
+      "name": "budget-only advice",
+      "pattern": "create a budget|keep an eye on costs",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 6,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Show how money arriving later than bills changes the survival window.",
+    "Attack the most fragile assumption before discussing secondary concerns.",
+    "Recommend a cheap real-world commitment before approving the build."
+  ]
+}

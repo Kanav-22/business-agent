@@ -1,0 +1,77 @@
+{
+  "id": "sales_landing_page_offer",
+  "agent": "sales",
+  "title": "Landing-page hero and offer for finance teams",
+  "scenario": "TOPIC: Write landing-page copy for an invoice reconciliation service\nCreate the top section of a landing page for finance managers at 20-to-100-person agencies who reconcile invoices in spreadsheets every Friday. The service imports bank and invoice files and returns an exception list within one business day for ₹25,000 per month. The first five customers receive a 14-day pilot and may leave without paying if the exception list is unusable. Write to that one persona, lead with the costly problem, present the complete offer and deadline, use one CTA, avoid invented proof, explain why the copy works, handle the top objections, and include one A/B hero variant.",
+  "expected_elements": [
+    {
+      "name": "specific finance persona",
+      "pattern": "persona\\s*:.*(?:finance manager|agency|reconcil)",
+      "weight": 1.0
+    },
+    {
+      "name": "problem-led hero",
+      "pattern": "(?:headline|hero|copy)\\s*:|every Friday|reconcil",
+      "weight": 1.0
+    },
+    {
+      "name": "complete priced offer",
+      "pattern": "offer\\s*:.*(?:₹\\s*25,?000|\\$\\s*25,?000)|₹\\s*25,?000",
+      "weight": 1.5
+    },
+    {
+      "name": "risk reversal",
+      "pattern": "14[- ]day pilot|leave without paying|don't pay|do not pay|guarantee",
+      "weight": 1.5
+    },
+    {
+      "name": "scarcity deadline",
+      "pattern": "first (?:five|5)|deadline|until|this month",
+      "weight": 1.0
+    },
+    {
+      "name": "one CTA",
+      "pattern": "CTA\\s*:|start (?:the|your) pilot|request (?:a|the) pilot",
+      "weight": 1.0
+    },
+    {
+      "name": "objections mapped",
+      "pattern": "objections? pre-?handled\\s*:|objection\\s*(?:→|->|:)",
+      "weight": 1.0
+    },
+    {
+      "name": "copy rationale",
+      "pattern": "why this works\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "A/B hero variant",
+      "pattern": "A/B variant\\s*:|variant B\\s*:|alternative (?:hero|headline)\\s*:",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "invented customer proof",
+      "pattern": "trusted by|hundreds of agencies|our customers save|proven results",
+      "penalty": 2.0
+    },
+    {
+      "name": "feature-list opening",
+      "pattern": "features\\s*:\\s*(?:AI|dashboard|integration)",
+      "penalty": 1.0
+    },
+    {
+      "name": "multiple calls to action",
+      "pattern": "(?:start|request) (?:the|your|a) pilot.*(?:book|download|subscribe|contact)",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Lead with the recurring manual burden in the buyer's own language.",
+    "Present the paid deliverable against the cost of the existing process.",
+    "Remove extra actions and unsupported claims from the page."
+  ]
+}

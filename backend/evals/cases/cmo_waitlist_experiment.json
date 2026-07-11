@@ -1,0 +1,67 @@
+{
+  "id": "cmo_waitlist_experiment",
+  "agent": "cmo",
+  "title": "Diagnose a weak waitlist campaign before launch",
+  "scenario": "TOPIC: Diagnose demand after a weak waitlist campaign\nA B2B inventory app spent ₹40,000 over 14 days: LinkedIn produced 80 clicks and 4 signups, paid search produced 120 clicks and 18 signups, and 10 additional signups came from founder referrals. Nobody was asked to pay. The founder wants to triple both ad budgets. Segment the evidence by channel, keep organic referrals separate, note sample-size and attribution limits, identify the exact warehouse persona and current alternative, choose one next experiment with CAC and payback logic, define what would prove willingness to pay, and give a demand verdict.",
+  "expected_elements": [
+    {
+      "name": "channel segmentation",
+      "pattern": "LinkedIn.*(?:click|signup|conversion)|paid search.*(?:click|signup|conversion)",
+      "weight": 1.5
+    },
+    {
+      "name": "organic share separated",
+      "pattern": "organic|founder referrals?|referral share",
+      "weight": 1.0
+    },
+    {
+      "name": "sample and attribution caveats",
+      "pattern": "sample size|small sample|attribution (?:window|limit|caveat)",
+      "weight": 1.0
+    },
+    {
+      "name": "specific warehouse persona",
+      "pattern": "warehouse (?:manager|owner|operator)|inventory (?:manager|lead)|target customer",
+      "weight": 1.0
+    },
+    {
+      "name": "channel arithmetic",
+      "pattern": "conversion rate|cost per (?:lead|signup)|CAC|payback",
+      "weight": 1.5
+    },
+    {
+      "name": "single next experiment",
+      "pattern": "next experiment|strongest channel|one channel|paid (?:pilot|trial)",
+      "weight": 1.5
+    },
+    {
+      "name": "willingness-to-pay evidence",
+      "pattern": "willingness to pay|deposit|pre-?order|paid pilot",
+      "weight": 1.5
+    },
+    {
+      "name": "demand verdict",
+      "pattern": "verdict\\s*:\\s*demand (?:proven|plausible|imagined)",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "recommends scaling before proof",
+      "pattern": "triple (?:both|the) (?:ad )?budgets?|scale (?:both|all) channels",
+      "penalty": 1.5
+    },
+    {
+      "name": "blended metric hides channels",
+      "pattern": "overall conversion (?:is|rate)(?![\\s\\S]{0,120}(?:LinkedIn|paid search))",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 6,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Keep each source of traffic distinct before comparing performance.",
+    "Acknowledge uncertainty created by the limited observation set.",
+    "Ask prospects for a costly commitment before increasing spend."
+  ]
+}

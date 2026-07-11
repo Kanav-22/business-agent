@@ -1,0 +1,77 @@
+{
+  "id": "coo_enterprise_pilot",
+  "agent": "coo",
+  "title": "Sequence a six-week enterprise pilot",
+  "scenario": "TOPIC: Plan a six-week enterprise pilot for an invoice assistant\nA three-person startup has signed a conditional pilot with a mid-sized retailer. Go-live must happen in six weeks. Security review usually takes two to four weeks; the customer has not supplied sample invoices; one founder owns engineering, another can sell for 20 hours per week, and a contractor is available 10 hours per week. The pilot needs data mapping, a manual fallback, user training, support coverage, and agreed success metrics. Build a dependency-driven execution plan with one owner and definition of done per step, start the longest lead-time work first, include a realistic buffer for customer-controlled tasks, set weekly measurable checkpoints, give dated kill or renegotiation criteria, and identify the top execution risk with mitigation.",
+  "expected_elements": [
+    {
+      "name": "goal and six-week deadline",
+      "pattern": "execution plan\\s*:.*(?:six|6)[- ]week|deadline\\s*:.*(?:six|6) weeks?",
+      "weight": 1.0
+    },
+    {
+      "name": "capacity assumption",
+      "pattern": "capacity assumption\\s*:|20\\s*hours?.*10\\s*hours?|10\\s*hours?.*20\\s*hours?",
+      "weight": 1.0
+    },
+    {
+      "name": "security lead time first",
+      "pattern": "security review.*(?:start|week\\s*1|day\\s*1)|longest lead[- ]time.*security",
+      "weight": 1.5
+    },
+    {
+      "name": "owner and done state per step",
+      "pattern": "owner.*definition of done|(?:founder|contractor)\\s*(?:—|->|-)\\s*.*(?:done\\s*=|definition of done)",
+      "weight": 1.5
+    },
+    {
+      "name": "dependency-driven sequence",
+      "pattern": "dependencies? (?:&|and) lead times?\\s*:|depends on|blocks\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "external-work buffer",
+      "pattern": "30% buffer|buffer.*(?:customer|security review|external)",
+      "weight": 1.0
+    },
+    {
+      "name": "weekly checkpoints",
+      "pattern": "weekly checkpoint metric\\s*:|week\\s*1.*week\\s*2.*week\\s*3",
+      "weight": 1.0
+    },
+    {
+      "name": "dated kill or renegotiation criteria",
+      "pattern": "kill criteria\\s*:|renegotiat.*(?:by|day|week)|(?:stop|delay) if",
+      "weight": 1.0
+    },
+    {
+      "name": "top execution risk",
+      "pattern": "top execution risk\\s*:.*mitigation|top risk\\s*:",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "security left until launch",
+      "pattern": "security review.*week\\s*(?:5|6)|complete the build.*security review",
+      "penalty": 2.0
+    },
+    {
+      "name": "shared ownership",
+      "pattern": "owners?\\s*:\\s*(?:everyone|the team)|engineering and sales jointly own",
+      "penalty": 1.0
+    },
+    {
+      "name": "no contingency",
+      "pattern": "no buffer needed|assume customer responds immediately",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 8,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Open the external review immediately because it controls the schedule.",
+    "Give each deliverable to exactly one accountable person.",
+    "Define an early condition for renegotiating the customer commitment."
+  ]
+}
