@@ -1,0 +1,19 @@
+date,type,category,amount,description,customer_name,employee_name,campaign_name
+2025-01-01,revenue,subscription,100.00,January subscription,Acme Co,,
+2025-01-01,revenue,subscription,200.00,January subscription,Beacon Labs,,
+2025-01-01,revenue,subscription,300.00,January subscription,Cinder Health,,
+2025-01-01,revenue,subscription,150.00,January subscription,Delta Retail,,
+2025-01-01,revenue,subscription,120.00,January subscription,Fable Foods,,
+2025-01-31,expense,salary,10000.00,January payroll,,Asha Rao,
+2025-01-31,expense,salary,5000.00,January payroll,,Noah Lee,
+2025-01-15,expense,marketing,1000.00,January search campaign,,,January Search
+2025-01-10,expense,cloud,500.00,January infrastructure,,,
+2025-02-01,revenue,subscription,100.00,February subscription,Acme Co,,
+2025-02-01,revenue,subscription,200.00,February subscription,Beacon Labs,,
+2025-02-01,revenue,subscription,300.00,February subscription,Cinder Health,,
+2025-02-01,revenue,subscription,150.00,February subscription,Delta Retail,,
+2025-02-01,revenue,subscription,250.00,February subscription,Echo Legal,,
+2025-02-28,expense,salary,10000.00,February payroll,,Asha Rao,
+2025-02-28,expense,salary,5000.00,February payroll,,Noah Lee,
+2025-02-15,expense,marketing,1500.00,February webinar,,,February Webinar
+2025-02-10,expense,cloud,500.00,February infrastructure,,,
