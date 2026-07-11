@@ -32,6 +32,7 @@ from app.db import make_engine
 from app.scheduler import JOBS, create_scheduler
 from app.venture.founder import get_founder_profile, set_founder_profile
 from app.venture.router import route as route_request
+from app.venture.workflows import VENTURE_WORKFLOWS
 
 log = logging.getLogger("business-agent")
 
@@ -54,6 +55,12 @@ class FounderBody(BaseModel):
     """Founder profile update: any subset of the 16 documented keys."""
 
     values: dict[str, str]
+
+
+class WorkflowBody(BaseModel):
+    """Topic supplied to a venture workflow."""
+
+    topic: str
 
 
 def create_app(settings: Settings | None = None, service=None) -> FastAPI:
@@ -240,6 +247,57 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
         return {"started": True, "job": job_name}
 
     # ---------------------------------------------------------- venture layer
+
+    venture_tasks: set[asyncio.Task] = set()
+
+    @app.get("/api/venture/workflows")
+    def venture_workflows():
+        return [
+            {
+                "name": name,
+                "label": workflow["label"],
+                "description": workflow["description"],
+            }
+            for name, workflow in VENTURE_WORKFLOWS.items()
+        ]
+
+    @app.post("/api/venture/{workflow_name}", status_code=202)
+    async def run_venture_workflow(workflow_name: str, body: WorkflowBody):
+        workflow = VENTURE_WORKFLOWS.get(workflow_name)
+        if workflow is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"unknown venture workflow {workflow_name!r}",
+            )
+        topic = (body.topic or "").strip()
+        if not topic:
+            raise HTTPException(status_code=400, detail="topic is required")
+        if len(topic) > 500:
+            raise HTTPException(
+                status_code=400,
+                detail="topic must be at most 500 characters",
+            )
+
+        job_key = f"venture:{workflow_name}"
+        if job_key in jobs_in_flight:
+            raise HTTPException(
+                status_code=409,
+                detail=f"{workflow_name} is already running",
+            )
+
+        async def runner():
+            try:
+                await workflow["run"](service, engine, topic)
+            except Exception:
+                log.exception("venture workflow %s failed", workflow_name)
+            finally:
+                jobs_in_flight.discard(job_key)
+
+        jobs_in_flight.add(job_key)
+        task = asyncio.get_running_loop().create_task(runner())
+        venture_tasks.add(task)
+        task.add_done_callback(venture_tasks.discard)
+        return {"started": True, "workflow": workflow_name}
 
     @app.post("/api/route")
     def route_endpoint(body: RouteBody):
