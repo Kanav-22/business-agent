@@ -10,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
+  Rocket,
   Sparkles,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/activity", label: "Agent Activity", icon: Activity },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/approvals", label: "Approvals", icon: Inbox },
+  { href: "/venture", label: "Venture Studio", icon: Rocket },
 ];
 
 const UPCOMING = [{ label: "Data", icon: Database, phase: "Phase 5" }];
