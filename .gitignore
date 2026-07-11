@@ -18,5 +18,8 @@ out/
 .env
 .env.local
 
+# Secrets — the Gemini key used by scripts-windows/start-1-proxy.ps1
+gemini-key.txt
+
 # OS
 .DS_Store
