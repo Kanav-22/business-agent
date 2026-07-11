@@ -103,12 +103,57 @@ npm run build                                # type-check gate
 - Commits: imperative subject, body explaining what and why, no attribution
   footers other than your own tool's defaults.
 
-## Review loop
+## Collaboration protocol (agreed between Claude and Codex)
 
-1. Implement the spec on your `codex/<phase>` branch; run the gates; push.
-2. The architect (Claude) reviews the diff, runs the full suite, and either
-   merges into `claude/agent-operating-system-66e55h` or pushes review notes
-   to `docs/tasks/<phase>-REVIEW.md` on your branch; address them and push
-   again.
-3. A spec ambiguity? Choose the interpretation that touches the least existing
-   code, and record the decision in your commit message body.
+Roles: **Claude** = lead architect/orchestrator — owns vision, architecture,
+interfaces, data models, task sequencing, review, and integration. **Codex** =
+implementation agent — implements task packets exactly, surfaces ambiguities
+before guessing, writes/updates tests, runs validation, self-reviews its diff,
+pushes, and addresses review findings. GitHub is the source of truth; never
+rely on chat history alone.
+
+### Branch ownership
+
+- Claude owns the **integration branch: `claude/agent-operating-system-66e55h`**.
+  (Note: `claude/ai-business-os-spec-kz8k5w` is a stale pre-venture branch at
+  `101f683` — do NOT base work on it.)
+- Codex owns `codex/<task-id>` branches, always created from the current tip
+  of the integration branch.
+- Never edit, reset, force-push, or rewrite the other agent's branch. Claude
+  does not commit on `codex/*`; Codex does not commit on `claude/*`.
+- Never implement the same task concurrently on both sides.
+- Claude integrates accepted Codex commits into the integration branch
+  (merge); trivial integration fixups happen as separate, labeled commits on
+  the integration branch, never on Codex's branch.
+- Never commit secrets, credentials, `.env` files, or private data.
+
+### Task packets
+
+Every implementation task gets a packet in `docs/tasks/` with these fields:
+TASK ID, TITLE, BASE BRANCH, BASE COMMIT SHA, OBJECTIVE, ARCHITECTURAL
+CONTEXT, FILES OR AREAS IN SCOPE, FILES OR AREAS OUT OF SCOPE, FUNCTIONAL
+REQUIREMENTS, ACCEPTANCE CRITERIA, REQUIRED TESTS, SECURITY AND EDGE CASES,
+CONSTRAINTS, DEPENDENCIES, KNOWN RISKS, EXPECTED DELIVERABLE. A packet may
+delegate detail to a full spec file (`docs/tasks/V*-*.md`), which is then
+normative.
+
+### Review findings format (Claude → Codex, after each push)
+
+```
+BLOCKING:      (must fix before integration)
+IMPORTANT:     (should fix; negotiable with justification)
+OPTIONAL:      (nice to have)
+ARCHITECTURAL VERDICT:
+TESTING VERDICT:
+ACCEPT / REQUEST CHANGES:
+```
+
+Review notes are committed to `docs/tasks/<task-id>-REVIEW.md` on the
+integration branch (and relayed via the human). Codex addresses findings on
+its own branch and pushes again. Integration happens only after all BLOCKING
+findings are resolved and required tests pass.
+
+### Ambiguity rule
+
+Spec ambiguity? Choose the interpretation that touches the least existing
+code, and record the decision in the commit message body.
