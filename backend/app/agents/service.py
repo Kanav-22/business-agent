@@ -49,6 +49,7 @@ from app.venture.agents import (
     VENTURE_CMO_SYSTEM_PROMPT,
     VENTURE_CTO_SYSTEM_PROMPT,
 )
+from app.venture.intake import business_context
 
 # Kept as a public alias — used by tests and by the finance schema docs.
 FINANCE_SCHEMA_DOC = build_schema_doc(FINANCE_TABLES)
@@ -719,7 +720,14 @@ class AgentService:
                 "date": dt.date.today().isoformat(),
             }
         )
+        context = business_context(self.engine)
+        task = message
+        if context:
+            task = (
+                "BUSINESS CONTEXT (the real company this chat is about):\n"
+                f"{context}\n\nREQUEST: {message}"
+            )
         result = await self.ceo.run(
-            message, on_event=on_event, budget=budget, history=history
+            task, on_event=on_event, budget=budget, history=history
         )
         return result, budget

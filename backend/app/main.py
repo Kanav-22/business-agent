@@ -5,8 +5,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import PlainTextResponse
@@ -31,6 +40,16 @@ from app.data.synthetic import SyntheticProvider
 from app.db import make_engine
 from app.scheduler import JOBS, create_scheduler
 from app.venture.founder import get_founder_profile, set_founder_profile
+from app.venture.intake import (
+    INTAKE_QUESTIONS,
+    INTAKE_SECTIONS,
+    MAX_UPLOAD_BYTES,
+    UPLOAD_MANIFEST,
+    get_business_profile,
+    sanitized_filename,
+    set_business_profile,
+    upload_manifest_entry,
+)
 from app.venture.router import route as route_request
 from app.venture.workflows import VENTURE_WORKFLOWS
 
@@ -53,6 +72,12 @@ class RouteBody(BaseModel):
 
 class FounderBody(BaseModel):
     """Founder profile update: any subset of the 16 documented keys."""
+
+    values: dict[str, str]
+
+
+class BusinessBody(BaseModel):
+    """Business profile update: any subset of the intake question keys."""
 
     values: dict[str, str]
 
@@ -249,6 +274,96 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
     # ---------------------------------------------------------- venture layer
 
     venture_tasks: set[asyncio.Task] = set()
+
+    @app.get("/api/intake/questions")
+    def intake_questions():
+        return {
+            "sections": INTAKE_SECTIONS,
+            "questions": INTAKE_QUESTIONS,
+            "uploads": UPLOAD_MANIFEST,
+        }
+
+    @app.get("/api/business")
+    def business():
+        return get_business_profile(engine)
+
+    @app.put("/api/business")
+    def update_business(body: BusinessBody):
+        try:
+            return set_business_profile(engine, body.values)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.post("/api/intake/upload")
+    async def intake_upload(
+        file: UploadFile = File(...),
+        kind: str = Form(...),
+    ):
+        manifest = upload_manifest_entry(kind)
+        if manifest is None:
+            await file.close()
+            raise HTTPException(
+                status_code=400,
+                detail=f"unknown intake upload kind {kind!r}",
+            )
+
+        try:
+            try:
+                filename = sanitized_filename(file.filename)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
+            extension = Path(filename).suffix.lower()
+            allowed = {
+                item.strip().lower()
+                for item in str(manifest["accepts"]).split(",")
+                if item.strip()
+            }
+            if extension not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"{kind} accepts {manifest['accepts']}; received "
+                        f"{extension or 'a file without an extension'}"
+                    ),
+                )
+            payload = await file.read(MAX_UPLOAD_BYTES + 1)
+        finally:
+            await file.close()
+
+        if len(payload) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=400, detail="file must be 2 MB or smaller")
+
+        if extension in {".txt", ".md"}:
+            try:
+                content = payload.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="intake documents must be UTF-8 text",
+                )
+            report_id = save_report(
+                engine,
+                title=f"Intake document: {filename}",
+                content=content,
+                agent="human",
+                kind="intake",
+            )
+            return {"stored": True, "report_id": report_id, "filename": filename}
+
+        imports_dir = settings.db_path.parent / "imports"
+        imports_dir.mkdir(parents=True, exist_ok=True)
+        canonical_filename = f"{kind.removesuffix('_csv')}.csv"
+        destination = imports_dir / canonical_filename
+        destination.write_bytes(payload)
+        next_step = (
+            "python3 scripts/import_real.py "
+            f'--source "{imports_dir.as_posix()}" --check'
+        )
+        return {
+            "stored": True,
+            "filename": canonical_filename,
+            "next": next_step,
+        }
 
     @app.get("/api/venture/workflows")
     def venture_workflows():

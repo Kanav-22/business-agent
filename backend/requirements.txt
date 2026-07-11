@@ -4,6 +4,7 @@ sqlalchemy>=2.0,<3
 anthropic>=0.40
 pydantic>=2.7,<3
 apscheduler>=3.10,<4
+python-multipart>=0.0.9
 
 # dev / test
 pytest>=8.0
