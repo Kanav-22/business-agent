@@ -185,8 +185,10 @@ Covers:
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated |
 | `SCHEDULER_ENABLED` | `1` | Monday auto-jobs (control check + briefing) |
 | `NEXT_PUBLIC_API_URL` (frontend) | `http://localhost:8000` | Backend base URL |
-| `SURVIVAL_MODE` | `0` | `1` = append downgrade-survival scaffolding to agent prompts |
+| `SURVIVAL_MODE` | `0` | `1` = append downgrade-survival scaffolding (global protocol + per-agent guides) to prompts |
 | `VENTURE_IN_CHAT` | `0` | `1` = expose venture specialists to the CEO chat roster |
+| `WEB_TOOLS_ENABLED` | `1` | `0` = strip Anthropic server-side web tools (required behind non-Anthropic proxies) |
+| `ANTHROPIC_BASE_URL` | Anthropic API | Point at an Anthropic-compatible proxy (e.g. LiteLLM) to run any model — see `docs/FREE_LLM_SETUP.md` |
 
 ## Roadmap
 
@@ -210,3 +212,7 @@ curl -X POST http://localhost:8000/api/route -H "Content-Type: application/json"
 A workflow request with a missing `topic` field returns `422`; a present but empty `topic` returns `400`.
 Run the output-quality suite from `backend/` with `DEMO_MODE=1 python3 -m evals.runner --save-report`.
 See [`docs/`](./docs/) for the operating designs and [`docs/SYSTEMS_REPORT.md`](./docs/SYSTEMS_REPORT.md) for the final implementation inventory.
+
+Running on a free/local model: [`docs/FREE_LLM_SETUP.md`](./docs/FREE_LLM_SETUP.md).
+Loading your real business data: [`docs/CONNECT_REAL_BUSINESS.md`](./docs/CONNECT_REAL_BUSINESS.md).
+Building another OS from this one: [`OS_TEMPLATE.md`](./OS_TEMPLATE.md).

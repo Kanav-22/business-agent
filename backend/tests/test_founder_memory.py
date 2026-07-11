@@ -149,13 +149,32 @@ def test_service_wiring_default_and_flags(settings):
     boosted = make_service(settings)
     assert "Survival scaffolding" in boosted.ceo.config.system_prompt
     assert "This is risk triage" in boosted.venture_team["risk"].config.system_prompt
+    # The global weak-model protocol reaches EVERY agent, guides or not.
+    assert "OPERATING PROTOCOL" in boosted.ceo.config.system_prompt
+    assert "OPERATING PROTOCOL" in boosted.venture_team["red_team"].config.system_prompt
+    assert "OPERATING PROTOCOL" in boosted.finance_team["fpa"].config.system_prompt
     settings.survival_mode = False
 
+    # WEB_TOOLS_ENABLED=0 strips Anthropic server tools (non-Anthropic proxies).
+    assert service.specialists["researcher"].config.server_tools
+    settings.web_tools_enabled = False
+    stripped = make_service(settings)
+    assert stripped.specialists["researcher"].config.server_tools == []
+    assert stripped.specialists["cmo"].config.server_tools == []
+    assert stripped.content_team["content"].config.server_tools == []
+    settings.web_tools_enabled = True
 
-def test_every_agent_prompt_resolves_to_its_own_demo_handler(settings):
+
+@pytest.mark.parametrize("survival", [False, True], ids=["default", "survival_mode"])
+def test_every_agent_prompt_resolves_to_its_own_demo_handler(settings, survival):
     """The demo-mode marker table must uniquely identify every agent —
-    including the new venture agents — from its system prompt."""
-    service = make_service(settings)
+    including the new venture agents — from its system prompt, with and
+    without the survival-mode injections (which must not add marker text)."""
+    settings.survival_mode = survival
+    try:
+        service = make_service(settings)
+    finally:
+        settings.survival_mode = False
     for agent in service.all_agents():
         matched = next(
             (name for marker, name in _MARKERS if marker in agent.config.system_prompt),

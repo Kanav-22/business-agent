@@ -37,6 +37,11 @@ class Settings:
     # venture-layer agents (red_team, risk, coo, sales, …). Off by default so
     # existing chat behavior is unchanged.
     venture_in_chat: bool = False
+    # WEB_TOOLS_ENABLED=0 strips the Anthropic server-side web_search/web_fetch
+    # declarations — required when running a non-Anthropic model behind an
+    # Anthropic-compatible proxy (they reject server tools). Researcher becomes
+    # internal-knowledge-only in that mode.
+    web_tools_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -62,6 +67,11 @@ class Settings:
         s.demo_mode = os.environ.get("DEMO_MODE", "0").lower() in ("1", "true", "yes")
         s.survival_mode = os.environ.get("SURVIVAL_MODE", "0").lower() in ("1", "true", "yes")
         s.venture_in_chat = os.environ.get("VENTURE_IN_CHAT", "0").lower() in ("1", "true", "yes")
+        s.web_tools_enabled = os.environ.get("WEB_TOOLS_ENABLED", "1").lower() not in (
+            "0",
+            "false",
+            "no",
+        )
         if origins := os.environ.get("CORS_ORIGINS"):
             s.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
         return s

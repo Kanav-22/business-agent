@@ -42,12 +42,7 @@ _BLOCK_RE = re.compile(
 )
 
 
-@lru_cache(maxsize=None)
-def survival_suffix(agent_name: str) -> str:
-    """The guide's injectable block for this agent, or '' when unavailable."""
-    filename = GUIDE_FOR_AGENT.get(agent_name)
-    if filename is None:
-        return ""
+def _block_from(filename: str) -> str:
     path = SURVIVAL_DIR / filename
     try:
         text = path.read_text(encoding="utf-8")
@@ -57,12 +52,32 @@ def survival_suffix(agent_name: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+@lru_cache(maxsize=None)
+def survival_suffix(agent_name: str) -> str:
+    """The guide's injectable block for this agent, or '' when unavailable."""
+    filename = GUIDE_FOR_AGENT.get(agent_name)
+    if filename is None:
+        return ""
+    return _block_from(filename)
+
+
+@lru_cache(maxsize=None)
+def global_protocol() -> str:
+    """The role-independent weak-model operating protocol (thinking order,
+    analysis order, output discipline) — applied to EVERY agent in survival
+    mode. Source: docs/survival/GLOBAL_PROTOCOL.md."""
+    return _block_from("GLOBAL_PROTOCOL.md")
+
+
 def apply_survival(agent_name: str, system_prompt: str, *, enabled: bool) -> str:
-    """Append the survival scaffolding when enabled. The original prompt stays
-    the prefix, so demo-mode marker matching is unaffected."""
+    """Append the global protocol plus the agent's guide scaffolding when
+    enabled. The original prompt stays the prefix, so demo-mode marker
+    matching is unaffected."""
     if not enabled:
         return system_prompt
-    suffix = survival_suffix(agent_name)
-    if not suffix:
-        return system_prompt
-    return f"{system_prompt}\n\n{suffix}"
+    parts = [system_prompt]
+    if protocol := global_protocol():
+        parts.append(protocol)
+    if suffix := survival_suffix(agent_name):
+        parts.append(suffix)
+    return "\n\n".join(parts)

@@ -346,7 +346,9 @@ class AgentService:
                         name, system_prompt, enabled=settings.survival_mode
                     ),
                     tools=tools,
-                    server_tools=server_tools or [],
+                    # Server-side web tools are Anthropic-only; strip them when
+                    # running behind a non-Anthropic proxy (WEB_TOOLS_ENABLED=0).
+                    server_tools=(server_tools or []) if settings.web_tools_enabled else [],
                     model=settings.agent_model,
                     max_tokens=settings.agent_max_tokens,
                     max_turns=settings.max_agent_turns,
