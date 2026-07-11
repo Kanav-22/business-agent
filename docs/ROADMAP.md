@@ -21,6 +21,14 @@ per phase in `docs/tasks/`; protocol in `AGENTS.md`.
 - Nothing may regress the operations layer: the original 64 tests are the
   floor, `AGENTS.md` hard rules apply to every task.
 
+## Next wave (packets ready)
+
+| Phase | Scope | Owner | Status |
+|-------|-------|-------|--------|
+| V6 | RealBusinessProvider: validated CSV import + CLI + templates (`docs/tasks/V6-TASK-PACKET.md`) | **Codex**, Claude reviews | Ready |
+| V7 | Business Intake: owner interview + own-words narratives + uploads + context injection + analyst review (`docs/tasks/V7-TASK-PACKET.md`) | **Codex** (after V6 merges), Claude reviews | Ready |
+| V8 | Swap the static Lumina company context in operations prompts for the stored business profile (prompt refactor) | unassigned | Sketched in V7 spec §3 |
+
 ## Post-V (future, not scheduled)
 
 - Phase 5 of the original spec: `RealBusinessProvider` (CSV/Stripe),
