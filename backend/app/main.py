@@ -17,10 +17,21 @@ from app.api.activity import get_activity
 from app.api.approvals import AlreadyDecided, decide_approval, list_approvals
 from app.api.kpis import get_kpis, get_meta, get_monthly_series
 from app.api.reports import get_report, list_reports, save_report
+from app.api.venture import (
+    archive_memory,
+    get_idea,
+    get_playbook,
+    list_eval_results,
+    list_ideas,
+    list_memories,
+    list_playbooks,
+)
 from app.config import Settings
 from app.data.synthetic import SyntheticProvider
 from app.db import make_engine
 from app.scheduler import JOBS, create_scheduler
+from app.venture.founder import get_founder_profile, set_founder_profile
+from app.venture.router import route as route_request
 
 log = logging.getLogger("business-agent")
 
@@ -31,6 +42,18 @@ class DecisionBody(BaseModel):
     """Optional note accompanying an approve/reject decision."""
 
     note: str | None = None
+
+
+class RouteBody(BaseModel):
+    """A free-text request for the prompt router."""
+
+    message: str
+
+
+class FounderBody(BaseModel):
+    """Founder profile update: any subset of the 16 documented keys."""
+
+    values: dict[str, str]
 
 
 def create_app(settings: Settings | None = None, service=None) -> FastAPI:
@@ -102,6 +125,15 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
     @app.get("/api/agents")
     def agents():
         finance = {a.config.name for a in service.finance_team.values()}
+        venture = {a.config.name for a in service.venture_team.values()}
+
+        def team(name: str) -> str | None:
+            if name in finance:
+                return "finance"
+            if name in venture:
+                return "venture"
+            return None
+
         return [
             {
                 "name": a.config.name,
@@ -109,7 +141,7 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
                 "description": a.config.description,
                 "color": a.config.color,
                 "tools": a.config.tools,
-                "team": "finance" if a.config.name in finance else None,
+                "team": team(a.config.name),
             }
             for a in service.all_agents()
         ]
@@ -206,6 +238,75 @@ def create_app(settings: Settings | None = None, service=None) -> FastAPI:
         jobs_in_flight.add(job_name)
         asyncio.get_running_loop().create_task(runner())
         return {"started": True, "job": job_name}
+
+    # ---------------------------------------------------------- venture layer
+
+    @app.post("/api/route")
+    def route_endpoint(body: RouteBody):
+        message = (body.message or "").strip()
+        if not message:
+            raise HTTPException(status_code=400, detail="message is required")
+        return route_request(message, engine).to_dict()
+
+    @app.get("/api/founder")
+    def founder():
+        return get_founder_profile(engine)
+
+    @app.put("/api/founder")
+    def update_founder(body: FounderBody):
+        try:
+            return set_founder_profile(engine, body.values)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.get("/api/memories")
+    def memories(
+        category: str | None = None,
+        status: str = "active",
+        related_idea: str | None = None,
+        limit: int = 100,
+    ):
+        if status not in ("active", "archived", ""):
+            raise HTTPException(status_code=400, detail="invalid status filter")
+        return list_memories(
+            engine,
+            category=category,
+            status=status,
+            related_idea=related_idea,
+            limit=max(1, min(limit, 200)),
+        )
+
+    @app.post("/api/memories/{memory_id}/archive")
+    def memory_archive(memory_id: int):
+        if not archive_memory(engine, memory_id):
+            raise HTTPException(status_code=404, detail="memory not found")
+        return {"archived": True, "id": memory_id}
+
+    @app.get("/api/ideas")
+    def ideas(limit: int = 50):
+        return list_ideas(engine, limit=max(1, min(limit, 200)))
+
+    @app.get("/api/ideas/{idea_id}")
+    def idea_detail(idea_id: int):
+        idea = get_idea(engine, idea_id)
+        if idea is None:
+            raise HTTPException(status_code=404, detail="idea not found")
+        return idea
+
+    @app.get("/api/playbooks")
+    def playbooks():
+        return list_playbooks()
+
+    @app.get("/api/playbooks/{slug}")
+    def playbook_detail(slug: str):
+        playbook = get_playbook(slug)
+        if playbook is None:
+            raise HTTPException(status_code=404, detail="playbook not found")
+        return playbook
+
+    @app.get("/api/evals")
+    def evals(agent: str | None = None, limit: int = 200):
+        return list_eval_results(engine, agent=agent, limit=max(1, min(limit, 500)))
 
     # ------------------------------------------------------------- WebSocket
 

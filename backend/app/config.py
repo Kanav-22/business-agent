@@ -30,6 +30,13 @@ class Settings:
     scheduler_enabled: bool = True
     # DEMO_MODE=1: zero-cost simulated model (rule-based routing, real tools).
     demo_mode: bool = False
+    # SURVIVAL_MODE=1: append the per-agent survival-guide scaffolding from
+    # docs/survival/ to system prompts — preserves output quality on weaker models.
+    survival_mode: bool = False
+    # VENTURE_IN_CHAT=1: let the CEO chat orchestrator also delegate to the
+    # venture-layer agents (red_team, risk, coo, sales, …). Off by default so
+    # existing chat behavior is unchanged.
+    venture_in_chat: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -53,6 +60,8 @@ class Settings:
             "no",
         )
         s.demo_mode = os.environ.get("DEMO_MODE", "0").lower() in ("1", "true", "yes")
+        s.survival_mode = os.environ.get("SURVIVAL_MODE", "0").lower() in ("1", "true", "yes")
+        s.venture_in_chat = os.environ.get("VENTURE_IN_CHAT", "0").lower() in ("1", "true", "yes")
         if origins := os.environ.get("CORS_ORIGINS"):
             s.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
         return s

@@ -17,6 +17,7 @@ from typing import Any, Callable
 from app.agents.base import Agent, AgentConfig, AgentResult, ToolContext
 from app.agents.budget import TokenBudget
 from app.agents.logging import DecisionLogger
+from app.agents.survival import apply_survival
 from app.agents.schema_docs import (
     CONTROL_TABLES,
     ENGINEERING_TABLES,
@@ -33,7 +34,21 @@ from app.tools.content_writer import make_content_writer_tool
 from app.tools.create_task import make_create_task_tool
 from app.tools.python_calc import make_python_calc_tool
 from app.tools.report_writer import make_report_writer_tool
+from app.tools.save_memory import make_save_memory_tool
+from app.tools.score_idea import make_score_idea_tool
 from app.tools.sql_query import make_sql_query_tool
+from app.venture.agents import (
+    COO_SYSTEM_PROMPT,
+    INTERVIEWER_SYSTEM_PROMPT,
+    RED_TEAM_SYSTEM_PROMPT,
+    RISK_SYSTEM_PROMPT,
+    SALES_SYSTEM_PROMPT,
+    SCORER_SYSTEM_PROMPT,
+    VENTURE_CEO_SYSTEM_PROMPT,
+    VENTURE_CFO_SYSTEM_PROMPT,
+    VENTURE_CMO_SYSTEM_PROMPT,
+    VENTURE_CTO_SYSTEM_PROMPT,
+)
 
 # Kept as a public alias — used by tests and by the finance schema docs.
 FINANCE_SCHEMA_DOC = build_schema_doc(FINANCE_TABLES)
@@ -325,7 +340,11 @@ class AgentService:
                     display_name=display_name,
                     description=description,
                     color=color,
-                    system_prompt=system_prompt,
+                    # SURVIVAL_MODE=1 appends the guide scaffolding from
+                    # docs/survival/; default off leaves prompts byte-identical.
+                    system_prompt=apply_survival(
+                        name, system_prompt, enabled=settings.survival_mode
+                    ),
                     tools=tools,
                     server_tools=server_tools or [],
                     model=settings.agent_model,
@@ -457,13 +476,127 @@ class AgentService:
             ),
         }
 
+        # ------------------------------------------------------- venture team
+        # Founder-facing agents (validating/launching NEW businesses). They are
+        # driven by the venture workflows (app/venture/workflows.py) and join
+        # the CEO's chat roster only when VENTURE_IN_CHAT=1.
+        self.venture_team: dict[str, Agent] = {
+            "venture_ceo": agent(
+                "venture_ceo",
+                "CEO (Venture)",
+                "Venture strategy: proposes plans for new businesses, revises "
+                "them after board objections, makes the final call.",
+                "#c084fc",
+                VENTURE_CEO_SYSTEM_PROMPT,
+                _registry(),
+                [],
+            ),
+            "venture_cfo": agent(
+                "venture_cfo",
+                "CFO (Venture)",
+                "Financial skeptic: attacks cost, revenue and runway assumptions "
+                "in venture proposals.",
+                "#10b981",
+                VENTURE_CFO_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["financial_assumption"])),
+                ["save_memory"],
+            ),
+            "venture_cmo": agent(
+                "venture_cmo",
+                "CMO (Venture)",
+                "Demand skeptic: attacks market-demand and positioning "
+                "assumptions in venture proposals.",
+                "#f9a8d4",
+                VENTURE_CMO_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["marketing_experiment"])),
+                ["save_memory"],
+            ),
+            "venture_cto": agent(
+                "venture_cto",
+                "CTO (Venture)",
+                "Feasibility skeptic: attacks technical assumptions; scopes the "
+                "minimal build that still delivers the promise.",
+                "#7dd3fc",
+                VENTURE_CTO_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["product_roadmap"])),
+                ["save_memory"],
+            ),
+            "coo": agent(
+                "coo",
+                "COO",
+                "Execution planning: turns decisions into sequenced plans with "
+                "owners, deadlines, checkpoints and kill criteria; attacks "
+                "execution complexity in debates.",
+                "#fdba74",
+                COO_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["lesson_learned"])),
+                ["save_memory"],
+            ),
+            "risk": agent(
+                "risk",
+                "Risk Officer",
+                "Legal, regulatory, compliance and reputational risk triage: "
+                "ranked risks with mitigations and a proceed/don't verdict.",
+                "#f87171",
+                RISK_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["risk"])),
+                ["save_memory"],
+            ),
+            "red_team": agent(
+                "red_team",
+                "Red Team",
+                "Attacks ideas, strategies and plans: weakest assumptions, "
+                "failure scenarios, severity, fixes. Direct and critical.",
+                "#ef4444",
+                RED_TEAM_SYSTEM_PROMPT,
+                _registry(),
+                [],
+            ),
+            "sales": agent(
+                "sales",
+                "Sales",
+                "Sales copy and strategy that converts a specific persona: "
+                "outreach, landing pages, offers, objection handling.",
+                "#facc15",
+                SALES_SYSTEM_PROMPT,
+                _registry(make_save_memory_tool(self.engine, ["sales_conversation"])),
+                ["save_memory"],
+            ),
+            "interviewer": agent(
+                "interviewer",
+                "Interviewer",
+                "Synthetic customer interviews: simulated personas + synthesis "
+                "for cheap validation BEFORE talking to real customers.",
+                "#a3a3a3",
+                INTERVIEWER_SYSTEM_PROMPT,
+                _registry(),
+                [],
+            ),
+            "scorer": agent(
+                "scorer",
+                "Idea Scorer",
+                "Strict 1-10 scoring of business ideas across 14 categories; "
+                "the Go/No-Go/Test-First verdict is computed deterministically.",
+                "#22d3ee",
+                SCORER_SYSTEM_PROMPT,
+                _registry(make_score_idea_tool(self.engine)),
+                ["score_idea"],
+            ),
+        }
+
+        # The CEO's chat roster: unchanged by default; VENTURE_IN_CHAT=1 lets
+        # chat also delegate to the venture team.
+        ceo_roster: dict[str, Agent] = dict(self.specialists)
+        if settings.venture_in_chat:
+            ceo_roster.update(self.venture_team)
+
         self.ceo = agent(
             "ceo",
             "CEO",
             "Orchestrator: routes requests to specialists (in parallel) and synthesizes.",
             "#a78bfa",
             CEO_SYSTEM_PROMPT,
-            _registry(self._make_roster_tool(), self._make_delegate_tool(self.specialists)),
+            _registry(self._make_roster_tool(), self._make_delegate_tool(ceo_roster)),
             ["get_agent_roster", "delegate_to_agent"],
         )
 
@@ -473,6 +606,7 @@ class AgentService:
             *self.specialists.values(),
             *self.finance_team.values(),
             *self.content_team.values(),
+            *self.venture_team.values(),
         ]
 
     # ------------------------------------------------------------------ client

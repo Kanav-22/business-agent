@@ -299,6 +299,284 @@ def _handle_researcher(turn: int, messages: list[dict]):
     ], "end_turn"
 
 
+# ------------------------------------------------- venture-layer playbooks
+# Venture agents are prompt-driven, so demo mode cans structured reasoning in
+# each agent's required output format while every tool call (score_idea,
+# save_memory) stays real. The canned text is honest about being canned.
+
+VENTURE_DEMO_NOTE = (
+    "_(Demo mode: template reasoning in the agent's required format — a live "
+    "model replaces this with real analysis.)_"
+)
+
+
+def _topic(task: str) -> str:
+    """Workflow briefs carry a 'TOPIC: …' line; fall back to the first line."""
+    for line in task.splitlines():
+        if line.strip().upper().startswith("TOPIC:"):
+            return line.split(":", 1)[1].strip()
+    first = task.strip().splitlines()[0] if task.strip() else "the proposal"
+    return first[:120]
+
+
+def _canned(text: str):
+    return [_text(f"{text}\n\n{VENTURE_DEMO_NOTE}")], "end_turn"
+
+
+def _handle_venture_ceo(turn: int, messages: list[dict]):
+    task = _last_user_text(messages)
+    topic = _topic(task)
+    if "revise" in task.lower() and "objection" in task.lower():
+        return _canned(
+            f"## Revised plan\nScope of {topic!r} cut to a small pilot: the finance "
+            "objection (unproven unit economics) is answered by pre-selling before "
+            "building; the demand objection by 10 discovery calls in week 1; the "
+            "feasibility and execution objections by dropping custom builds for "
+            "no-code tools.\n\n"
+            "## Final decision\nProceed as a 30-day pilot with pre-sales as the gate "
+            "— not a full launch.\n\n"
+            "## Remaining risks\n- Pilot interest may not convert to paid (owner: COO)\n"
+            "- Regulatory questions stay open until reviewed (owner: Risk Officer)\n\n"
+            "## Execution steps\n1. List 100 prospects and start outreach (week 1)\n"
+            "2. Pre-sell to 3 before building anything (weeks 1-2)\n"
+            "3. Deliver a manual pilot to the first payer (weeks 3-4)\n\n"
+            "## Owner\nFounder\n\n## Deadline\n30 days\n\n"
+            "Would reverse if: fewer than 3 discovery calls booked by day 10."
+        )
+    return _canned(
+        f"## Proposal\nStrategy for {topic!r}: start with the narrowest viable "
+        "niche, one concrete offer at a fixed monthly price, one acquisition "
+        "channel (direct outreach), and a 30-day timeline to first revenue.\n\n"
+        "Key numbers: budget split 70% delivery / 30% acquisition; target 3 "
+        "paying customers in 30 days.\n\n"
+        "Assumptions (numbered for attack):\n"
+        "1. The niche feels this pain weekly and will take a call about it.\n"
+        "2. One founder can deliver the offer alongside sales.\n"
+        "3. Price clears the founder's minimum viable income at 10 customers.\n\n"
+        "First 3 steps: (1) list 100 prospects, (2) book 5 discovery calls, "
+        "(3) pre-sell before building."
+    )
+
+
+def _handle_venture_cfo(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Financial objections to {topic!r}:\n"
+        "1. Customer-acquisition cost is assumed, not measured — if it is 2x the "
+        "assumption, the budget buys ~2 customers, not a business.\n"
+        "2. Cash timing ignored: revenue arrives after delivery, tools and ads "
+        "bill up front.\n"
+        "3. Price point has no anchor — no comparable offer is cited.\n\n"
+        "Numbers the plan is missing: CAC target, gross margin after tool costs, "
+        "founder minimum monthly income.\n"
+        "Cheapest validation of the worst assumption: pre-sell to 3 prospects "
+        "before building (cost ~0, one week).\n"
+        "Verdict: fund with conditions — 1 pre-sale within 10 days or stop."
+    )
+
+
+def _handle_venture_cmo(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Demand & positioning objections to {topic!r}:\n"
+        "1. Demand is asserted, not evidenced — no payments, pre-orders or "
+        "replies are cited. What would prove it: 10 discovery calls where 4+ "
+        "name this as a top-3 problem.\n"
+        "2. The target customer is too broad to reach with one message.\n"
+        "3. The channel plan lacks arithmetic (cost per lead x conversion → CAC "
+        "vs. customer value).\n\n"
+        "Target customer as stated: too close to 'everyone' — pick one niche.\n"
+        "Strongest channel hypothesis + math: direct outreach to 100 named "
+        "prospects; at 15% reply and 20% close → 3 customers, CAC ≈ founder "
+        "time only.\n"
+        "Verdict: demand imagined — run the discovery calls before building."
+    )
+
+
+def _handle_venture_cto(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Feasibility objections to {topic!r}:\n"
+        "1. Third-party approvals (payment/API/platform access) take 1-3 weeks; "
+        "the plan assumes zero days.\n"
+        "2. The stated build scope is the full vision, not the minimal promise "
+        "— at the founder's skill level, budget 2x the stated time.\n"
+        "3. No fallback is named for the AI-dependent step.\n\n"
+        "Minimal build that delivers the promise: no-code intake + one automated "
+        "workflow + manual review behind the scenes; ~1 week.\n"
+        "Riskiest technical assumption + ≤3-day prototype: that the critical "
+        "integration allows what the plan needs — wire it end-to-end with dummy "
+        "data first.\n"
+        "Verdict: buildable with cuts."
+    )
+
+
+def _handle_coo(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Execution plan: first paying customer for {topic!r} in 30 days.\n"
+        "Capacity assumption: 20 focused hours/week, existing skills only.\n\n"
+        "Week 1: Founder — list 100 prospects (done = sheet with contact + "
+        "reason-to-buy); Founder — contact 20, book 5 calls (done = 5 in "
+        "calendar). Week 2: run calls; send one-page offer to all 5. Week 3: "
+        "manual pilot for the first yes. Week 4: convert pilot to paid; ask for "
+        "2 referrals.\n\n"
+        "Dependencies & lead times: any platform/API approval filed on day 1.\n"
+        "Weekly checkpoint metric: calls booked (wk1: 5) → offers sent (wk2: 5) "
+        "→ pilots live (wk3: 1) → paid (wk4: 1).\n"
+        "Kill criteria: <2 calls booked by day 10 → change niche or channel.\n"
+        "Top execution risk: founder time collapses — pre-block calling slots "
+        "in the calendar now."
+    )
+
+
+def _handle_risk(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Risk assessment: {topic!r} (jurisdiction: founder's home market — "
+        "verify).\n"
+        "1. Regulatory surface — regulatory. Likelihood M, severity H. Trigger: "
+        "the offer touches a regulated activity (health/finance/data). "
+        "Mitigation: position as tooling, not advice; minimize data collected; "
+        "written scope. → residual M/L.\n"
+        "2. Platform dependency — operational. Likelihood M, severity M. "
+        "Trigger: a policy change on the main channel/API. Mitigation: keep an "
+        "owned contact list and a fallback channel. → residual L.\n"
+        "3. Reputational — worst screenshot: an automated message going wrong "
+        "in public. Mitigation: human review on outward-facing sends (the "
+        "Approvals inbox already enforces this).\n\n"
+        "Fatal-if-ignored: operating a licensed activity without checking — "
+        "verify before selling.\n"
+        "Requires professional review: client contract template (lawyer, one-time).\n"
+        "Overall: proceed with mitigations.\n"
+        "This is risk triage, not legal advice."
+    )
+
+
+def _handle_red_team(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Red-team findings for {topic!r} (worst first):\n"
+        "1. Weak assumption: people who complain will pay.\n"
+        "   Why it matters: the entire revenue model rests on it.\n"
+        "   Evidence needed: 3 pre-sales or signed pilots.\n"
+        "   Failure scenario: 30 days of building, zero payers, morale gone.\n"
+        "   Severity: fatal. Fix: pre-sell before building.\n"
+        "2. Weak assumption: the founder can sell and deliver simultaneously.\n"
+        "   Evidence needed: a week-1 calendar that actually fits both.\n"
+        "   Severity: serious. Fix: cut delivery scope to manual-first.\n"
+        "3. Weak assumption: no incumbent responds.\n"
+        "   Evidence needed: what the top 3 alternatives ship this quarter.\n"
+        "   Severity: manageable. Fix: pick a niche too small for them.\n\n"
+        "Revised recommendation: pursue only as a pre-sold, manual-first pilot; "
+        "kill it if nobody pre-pays in 2 weeks."
+    )
+
+
+def _handle_sales(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    return _canned(
+        f"Persona: the owner-operator losing hours weekly to the problem behind "
+        f"{topic!r}; current solution: doing it manually.\n"
+        "Offer: outcome delivered in 7 days, fixed monthly price, first 2 weeks "
+        "free, 3 pilot slots.\n\n"
+        "Copy (cold email, ≤120 words):\n"
+        "Subject: your Tuesday afternoons\n"
+        "Hi — businesses like yours lose hours every week to this exact task. "
+        "We take it off your plate in 7 days; you check results in a weekly "
+        "2-line email. First 2 weeks free, and if it doesn't save real time, "
+        "don't pay. Worth a 10-minute call Thursday?\n\n"
+        "Why this works: opens on their cost, not the product; risk reversed; "
+        "one CTA with a specific day.\n"
+        "Objections pre-handled: 'too technical' → done-for-you in 7 days; "
+        "'cost' → free pilot.\n"
+        "A/B variant subject: '2 hours back, every week'."
+    )
+
+
+_DEMO_PERSONA_TYPES = [
+    ("Skeptical veteran", 3, "has seen tools like this fail before"),
+    ("Overwhelmed owner", 8, "drowning in the manual version of this task"),
+    ("Price-sensitive starter", 5, "wants it but budgets in the hundreds"),
+    ("Happy with current tool", 2, "sees no reason to switch"),
+    ("Early adopter", 7, "tries everything new in the space"),
+]
+
+
+def _handle_interviewer(turn: int, messages: list[dict]):
+    topic = _topic(_last_user_text(messages))
+    personas = []
+    for i in range(20):
+        kind, likelihood, stance = _DEMO_PERSONA_TYPES[i % len(_DEMO_PERSONA_TYPES)]
+        personas.append(
+            f"{i + 1}. {kind} — {stance}. Frustration {min(likelihood + 1, 10)}/10; "
+            f"budget scales with business size; buying trigger: a visible weekly "
+            f"loss; objection: \"how is this different from what I do now?\"; "
+            f"likelihood to buy {likelihood}/10; best angle: show the hours lost."
+        )
+    body = (
+        f"SYNTHETIC customer interviews for {topic!r} — 20 simulated personas "
+        "(demo mode cycles 5 archetypes; a live model writes 20 distinct "
+        "ones):\n\n" + "\n".join(personas) + "\n\n"
+        "Synthesis:\n"
+        "- Common pain: recurring manual work with a visible weekly cost.\n"
+        "- Repeated objection: differentiation from the status quo.\n"
+        "- Strongest segment: overwhelmed owner-operators; weakest: users happy "
+        "with current tools.\n"
+        "- Most promising offer: done-for-you pilot with risk reversal.\n"
+        "- Best pricing angle: priced against hours saved.\n"
+        "- Best landing message: name the weekly loss, promise the outcome in "
+        "7 days.\n\n"
+        "These are SYNTHETIC interviews — validate with at least 10 real "
+        "customer conversations before building."
+    )
+    return _canned(body)
+
+
+# Conservative mid-range scores: the deterministic engine turns these into a
+# TEST FIRST verdict — the honest default for an unvalidated idea.
+_DEMO_SCORES = {
+    "market_demand": 6, "ease_of_mvp": 6, "speed_to_revenue": 6,
+    "competition_level": 5, "founder_fit": 5, "distribution_advantage": 4,
+    "technical_complexity": 6, "legal_regulatory_risk": 6, "capital_required": 7,
+    "scalability": 6, "profit_margin": 6, "defensibility": 4,
+    "time_to_first_customer": 5, "risk_adjusted_upside": 5,
+}
+
+
+def _handle_scorer(turn: int, messages: list[dict]):
+    task = _last_user_text(messages)
+    topic = _topic(task)
+    if turn == 0:
+        return [
+            _tool_use(
+                "score_idea",
+                {
+                    "title": topic[:200],
+                    "description": task.strip()[:1800],
+                    "scores": dict(_DEMO_SCORES),
+                    "rationales": {
+                        key: "Demo-mode conservative estimate; replace with "
+                        "evidence-based scoring on a live model."
+                        for key in _DEMO_SCORES
+                    },
+                    "best_version": "The narrowest niche variant of the idea, "
+                    "pre-sold before building.",
+                    "worst_risk": "Demand is assumed, not evidenced.",
+                    "validation_test": "Pre-sell to 3 prospects in one week at "
+                    "near-zero cost.",
+                    "next_actions": [
+                        "List 100 named prospects in one niche",
+                        "Book 5 discovery calls this week",
+                        "Pre-sell a pilot before building anything",
+                    ],
+                },
+            )
+        ], "tool_use"
+    results = _last_tool_results(messages)
+    return [_text("\n\n".join(results) + f"\n\n{VENTURE_DEMO_NOTE}")], "end_turn"
+
+
 _HANDLERS = {
     "ceo": _handle_ceo,
     "cfo": _handle_cfo,
@@ -311,6 +589,17 @@ _HANDLERS = {
     "control": lambda turn, messages: _leaf_playbook("control", turn, messages),
     "cto": lambda turn, messages: _leaf_playbook("cto", turn, messages),
     "coordinator": lambda turn, messages: _leaf_playbook("coordinator", turn, messages),
+    # venture layer
+    "venture_ceo": _handle_venture_ceo,
+    "venture_cfo": _handle_venture_cfo,
+    "venture_cmo": _handle_venture_cmo,
+    "venture_cto": _handle_venture_cto,
+    "coo": _handle_coo,
+    "risk": _handle_risk,
+    "red_team": _handle_red_team,
+    "sales": _handle_sales,
+    "interviewer": _handle_interviewer,
+    "scorer": _handle_scorer,
 }
 
 _MARKERS = [
@@ -320,6 +609,19 @@ _MARKERS = [
     ("Reporting agent", "reporting"),
     ("Revenue agent", "revenue"),
     ("Control agent", "control"),
+    # Venture markers sit before the operations "CMO agent"/"CTO agent"
+    # entries so a venture-skeptic prompt can never fall through to an
+    # operations handler; none of these phrases appears in any other prompt.
+    ("venture strategist", "venture_ceo"),
+    ("financial skeptic", "venture_cfo"),
+    ("demand skeptic", "venture_cmo"),
+    ("feasibility skeptic", "venture_cto"),
+    ("COO agent", "coo"),
+    ("Risk Officer agent", "risk"),
+    ("Red Team agent", "red_team"),
+    ("Sales agent", "sales"),
+    ("Interviewer agent", "interviewer"),
+    ("Idea Scorer agent", "scorer"),
     ("CMO agent", "cmo"),
     ("CTO agent", "cto"),
     ("Researcher agent", "researcher"),

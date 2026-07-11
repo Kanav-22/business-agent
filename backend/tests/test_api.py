@@ -39,12 +39,19 @@ def test_agents_endpoint(settings):
     with make_client(settings, []) as client:
         agents = client.get("/api/agents").json()
         names = {a["name"] for a in agents}
-        assert names == {
+        # The original operations roster must always be present…
+        assert names >= {
             "ceo", "cfo", "cmo", "cto", "researcher", "coordinator",
             "fpa", "reporting", "revenue", "control", "content",
         }
         finance = {a["name"] for a in agents if a["team"] == "finance"}
         assert finance == {"fpa", "reporting", "revenue", "control"}
+        # …and the venture layer is listed as its own team.
+        venture = {a["name"] for a in agents if a["team"] == "venture"}
+        assert venture == {
+            "venture_ceo", "venture_cfo", "venture_cmo", "venture_cto",
+            "coo", "risk", "red_team", "sales", "interviewer", "scorer",
+        }
 
 
 def test_chat_websocket_streams_delegation(settings):
