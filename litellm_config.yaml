@@ -1,7 +1,7 @@
 # LiteLLM proxy config: exposes Gemini behind an Anthropic-compatible API
 # so the Business OS can use it. Started by scripts-windows/start-1-proxy.ps1
 # (or: litellm --config litellm_config.yaml --port 4000).
-# The Gemini API key is read from the GEMINI_API_KEY environment variable —
+# The Gemini API key is read from the GEMINI_API_KEY environment variable -
 # on Windows the start script loads it from gemini-key.txt for you.
 model_list:
   - model_name: business-os

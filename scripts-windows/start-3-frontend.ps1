@@ -1,4 +1,4 @@
-# Window 3 of 3 — the dashboard. Needs the backend running (window 2).
+# Window 3 of 3 - the dashboard. Needs the backend running (window 2).
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location (Join-Path $root "frontend")

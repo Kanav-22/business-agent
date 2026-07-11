@@ -1,4 +1,4 @@
-# Alternative to start-2-backend.ps1: DEMO mode — no API key, no proxy, $0.
+# Alternative to start-2-backend.ps1: DEMO mode - no API key, no proxy, $0.
 # Rule-based canned reasoning, but every tool runs for real (live SQL, real
 # reports, real workflows). Perfect for the first run and for testing.
 $ErrorActionPreference = "Stop"

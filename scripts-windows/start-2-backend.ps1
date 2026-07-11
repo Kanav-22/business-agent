@@ -1,4 +1,4 @@
-# Window 2 of 3 — the Business OS backend, running on Gemini via the proxy.
+# Window 2 of 3 - the Business OS backend, running on Gemini via the proxy.
 # Start scripts-windows/start-1-proxy.ps1 in another window FIRST.
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -21,5 +21,5 @@ $env:WEB_TOOLS_ENABLED  = "0"   # Gemini can't run Anthropic's server-side web t
 $env:SURVIVAL_MODE      = "1"   # weak-model scaffolding on
 
 Write-Host ""
-Write-Host "Backend starting on http://localhost:8000 — keep this window open." -ForegroundColor Green
+Write-Host "Backend starting on http://localhost:8000 - keep this window open." -ForegroundColor Green
 & .venv\Scripts\uvicorn.exe app.main:app --port 8000

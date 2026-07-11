@@ -1,4 +1,4 @@
-# Window 1 of 3 — the LiteLLM proxy (translates the app's requests to Gemini).
+# Window 1 of 3 - the LiteLLM proxy (translates the app's requests to Gemini).
 # Your Gemini API key lives in ONE place: gemini-key.txt in the project folder.
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -38,5 +38,5 @@ if (-not (Test-Path $litellm)) {
 }
 
 Write-Host ""
-Write-Host "Proxy starting on http://localhost:4000 — keep this window open." -ForegroundColor Green
+Write-Host "Proxy starting on http://localhost:4000 - keep this window open." -ForegroundColor Green
 & $litellm --config (Join-Path $root "litellm_config.yaml") --port 4000
