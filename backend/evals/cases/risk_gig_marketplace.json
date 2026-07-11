@@ -1,0 +1,72 @@
+{
+  "id": "risk_gig_marketplace",
+  "agent": "risk",
+  "title": "Worker classification and safety exposure in a gig marketplace",
+  "scenario": "TOPIC: Assess launch risk for an on-demand home-repair marketplace\nA Delhi company will dispatch independent electricians and plumbers, set their prices, penalize rejected jobs, collect payment, and promise customers that every worker is 'fully certified and insured.' The company has checked neither licences nor insurance and plans to retain identity documents in a shared drive. It will launch in Delhi NCR in 21 days with 100 contractors. Rank legal, financial, safety, privacy, platform, and reputational risks; state jurisdiction; provide likelihood, severity, triggers, costed mitigations and residual exposure; call out the fatal issue, targeted professional review, and an explicit overall verdict with the risk-triage disclaimer.",
+  "expected_elements": [
+    {
+      "name": "jurisdiction assumed",
+      "pattern": "jurisdiction assumed\\s*:|Delhi|India assumed|Indian law",
+      "weight": 1.0
+    },
+    {
+      "name": "ranked numbered risks",
+      "pattern": "risk assessment\\s*:|(?:^|\\n)\\s*1[.)].*(?:legal|regulatory|financial|reputational|safety)",
+      "weight": 1.5
+    },
+    {
+      "name": "likelihood and severity",
+      "pattern": "likelihood\\s*:\\s*[LMH]|likelihood\\s*:\\s*(?:low|medium|high)[\\s\\S]{0,80}severity\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "classification or licensing exposure",
+      "pattern": "worker classification|employee|contractor|licen[cs]e|certif",
+      "weight": 1.5
+    },
+    {
+      "name": "claim and privacy exposure",
+      "pattern": "misrepresentation|advertising claim|identity documents?|DPDP|personal data",
+      "weight": 1.0
+    },
+    {
+      "name": "trigger and costed mitigation",
+      "pattern": "trigger\\s*:.*mitigation\\s*:|mitigation\\s*:.*(?:₹|\\$|days?|weeks?).*residual",
+      "weight": 1.5
+    },
+    {
+      "name": "fatal issue and specialist",
+      "pattern": "fatal-if-ignored\\s*:|requires professional review\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "overall verdict",
+      "pattern": "overall\\s*:\\s*(?:proceed with mitigations|proceed|do not proceed)\\b",
+      "weight": 1.5
+    },
+    {
+      "name": "risk triage disclaimer",
+      "pattern": "this is risk triage, not legal advice",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "industry-practice excuse",
+      "pattern": "everyone in (?:the|this) industry does it|standard industry practice,? so",
+      "penalty": 1.5
+    },
+    {
+      "name": "generic legal disclaimer only",
+      "pattern": "consult a lawyer and make sure you follow all applicable regulations",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 6,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Order exposures by expected damage rather than listing them by category.",
+    "Replace unverified customer promises with a documented screening process.",
+    "Assign each safeguard a practical effort and remaining exposure."
+  ]
+}

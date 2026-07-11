@@ -1,0 +1,67 @@
+{
+  "id": "cto_booking_mvp",
+  "agent": "cto",
+  "title": "Cut a clinic booking product to a four-week MVP",
+  "scenario": "TOPIC: Scope a clinic booking product for a basic-coding founder\nA solo founder with basic Python skills wants to ship in four weeks. The proposed product includes a WhatsApp booking bot, custom retrieval over clinic documents, calendar sync, patient accounts, subscriptions, analytics, and multilingual voice. Budget is ₹1 lakh. The founder has not applied for WhatsApp API access and has never operated production software. Rank feasibility objections with time or cost impact, define the minimal build and concrete stack that still delivers the promise, make buy-versus-build choices, name the riskiest assumption and a prototype that can run within three days, include fallbacks, and give a buildability verdict.",
+  "expected_elements": [
+    {
+      "name": "ranked feasibility objections",
+      "pattern": "feasibility objections?\\s*:|(?:^|\\n)\\s*1[.)].*(?:harder|impact|week|cost)",
+      "weight": 1.5
+    },
+    {
+      "name": "minimal build scope",
+      "pattern": "minimal build|smallest (?:build|system)|scope cut|manual review",
+      "weight": 1.5
+    },
+    {
+      "name": "concrete stack",
+      "pattern": "stack\\s*:|FastAPI|Postgres|SQLite|Tally|Zapier|Calendar API",
+      "weight": 1.0
+    },
+    {
+      "name": "time range with assumptions",
+      "pattern": "\\d+\\s*(?:-|–|to)\\s*\\d+\\s*(?:days?|weeks?)|assum(?:e|ing|ptions?)",
+      "weight": 1.0
+    },
+    {
+      "name": "buy versus build",
+      "pattern": "buy (?:vs\\.?|versus) build|buy\\s*:|build\\s*:|use (?:a )?(?:managed|hosted|existing)",
+      "weight": 1.0
+    },
+    {
+      "name": "three-day risk prototype",
+      "pattern": "riskiest (?:technical )?assumption|prototype.*(?:3|three) days?|(?:3|three)[- ]day prototype",
+      "weight": 2.0
+    },
+    {
+      "name": "failure fallback",
+      "pattern": "fallback|manual override|degrad|failure mode",
+      "weight": 1.0
+    },
+    {
+      "name": "buildability verdict",
+      "pattern": "verdict\\s*:\\s*(?:buildable as planned|buildable with cuts|not buildable)",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "vague stack recommendation",
+      "pattern": "use modern frameworks|cloud hosting|make (?:it|the system) scalable",
+      "penalty": 1.5
+    },
+    {
+      "name": "accepts full scope",
+      "pattern": "build all (?:features|of it)|full scope is feasible",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Remove anything that does not deliver the core customer promise.",
+    "Choose named components that fit the founder's current capability.",
+    "Test the hardest integration through a tiny disposable experiment."
+  ]
+}

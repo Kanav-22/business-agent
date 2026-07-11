@@ -1,0 +1,62 @@
+{
+  "id": "cmo_niche_channel",
+  "agent": "cmo",
+  "title": "Choose a wedge and acquisition channel for clinic software",
+  "scenario": "TOPIC: Find a demand wedge for clinic follow-up software\nA founder says the target is 'all doctors' and plans to use content, paid search, LinkedIn, and influencers at once. The product automates post-visit follow-up; no customer has paid yet. The launch budget is ₹75,000 and the target price is ₹10,000 per clinic per month. Challenge the demand and positioning assumptions, narrow the target to a testable customer, name the current alternative and switching reason, choose one channel with lead-to-close arithmetic and payback, state what behavior would prove demand, and end with a proven / plausible / imagined verdict.",
+  "expected_elements": [
+    {
+      "name": "demand and positioning objections",
+      "pattern": "demand (?:&|and) positioning objections?\\s*:|missing evidence|what would prove",
+      "weight": 1.5
+    },
+    {
+      "name": "specific target customer",
+      "pattern": "target customer(?: as stated)?\\s*:|(?:solo|independent|small) (?:clinic|practice|doctor)|dermatolog",
+      "weight": 1.5
+    },
+    {
+      "name": "alternative and switching reason",
+      "pattern": "current alternative|switch(?:ing)? reason|instead of|replace",
+      "weight": 1.0
+    },
+    {
+      "name": "one channel hypothesis",
+      "pattern": "strongest channel|one channel|direct outreach|paid search|cold outreach",
+      "weight": 1.5
+    },
+    {
+      "name": "CAC and payback math",
+      "pattern": "CAC|customer acquisition cost|payback",
+      "weight": 1.5
+    },
+    {
+      "name": "behavioral demand proof",
+      "pattern": "pre-?order|paid pilot|deposit|reply rate|discovery calls?|would prove",
+      "weight": 1.5
+    },
+    {
+      "name": "demand verdict",
+      "pattern": "verdict\\s*:\\s*demand (?:proven|plausible|imagined)",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "multi-channel dilution",
+      "pattern": "(?<!not )(?<!don't )(?:use (?:all|multiple) channels|content.*paid search.*LinkedIn.*influencer)",
+      "penalty": 1.5
+    },
+    {
+      "name": "awareness cliché",
+      "pattern": "build brand awareness|drive engagement|multiple touchpoints",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Replace the broad audience with one observable buyer profile.",
+    "Choose a single route to buyers and show its full economic chain.",
+    "Define a real commitment that separates interest from demand."
+  ]
+}

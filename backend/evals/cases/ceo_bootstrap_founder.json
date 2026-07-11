@@ -1,0 +1,67 @@
+{
+  "id": "ceo_bootstrap_founder",
+  "agent": "ceo",
+  "title": "Bootstrap founder, INR 50,000 and 30 days",
+  "scenario": "TOPIC: Bootstrap an AI automation business with ₹50,000 in 30 days\nI am a solo founder in India with basic coding skills, ₹50,000 total cash, and 30 days to win my first paying customer. I want an AI automation business but have not chosen an industry. Propose one narrow niche and one concrete offer, define the smallest sellable MVP, give a customer-acquisition plan and pricing, identify the main risks, and finish with a detailed first seven-day plan. Make a clear decision rather than listing unrelated ideas.",
+  "expected_elements": [
+    {
+      "name": "narrow niche",
+      "pattern": "niche|segment|dermatolog|clinic|specific customer",
+      "weight": 1.5
+    },
+    {
+      "name": "concrete offer",
+      "pattern": "offer\\s*:|deliverable|done-for-you|service package",
+      "weight": 1.5
+    },
+    {
+      "name": "smallest sellable MVP",
+      "pattern": "\\bMVP\\b|minimum viable|manual pilot|smallest sellable",
+      "weight": 1.5
+    },
+    {
+      "name": "acquisition plan",
+      "pattern": "acquisition|outreach|prospect|discovery calls?|cold email",
+      "weight": 1.5
+    },
+    {
+      "name": "pricing",
+      "pattern": "pric(?:e|ing)|₹\\s*[\\d,]+|\\$\\s*[\\d,]+",
+      "weight": 1.5
+    },
+    {
+      "name": "material risks",
+      "pattern": "risks? accepted|main risks?|top risks?|failure mode",
+      "weight": 1.0
+    },
+    {
+      "name": "first seven-day actions",
+      "pattern": "7[- ]day|seven[- ]day|day\\s*1|first week",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "generic perseverance advice",
+      "pattern": "work hard|stay focused|be consistent|success depends on execution",
+      "penalty": 1.5
+    },
+    {
+      "name": "fundraising instead of validation",
+      "pattern": "(?<!not )(?<!don't )(?:raise (?:funding|capital)|seek investors?|venture capital)",
+      "penalty": 1.5
+    },
+    {
+      "name": "many simultaneous businesses",
+      "pattern": "try (?:several|multiple) (?:niches|ideas)|pursue all",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Choose one buyer and state exactly what that buyer receives.",
+    "Turn the opening week into scheduled actions with accountable parties.",
+    "Ground the recommendation in the founder's cash and skill constraints."
+  ]
+}

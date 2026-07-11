@@ -1,0 +1,82 @@
+{
+  "id": "board_clinic_ai_launch",
+  "agent": "board",
+  "title": "Board debate on launching an AI clinic intake assistant",
+  "scenario": "TOPIC: Decide whether to launch an AI clinic intake assistant in 45 days\nThe proposal is a public launch to 200 Indian clinics in 45 days at ₹12,000 per month. The product collects symptoms and contact details over WhatsApp, suggests urgency, and writes to clinic calendars. The solo founder has ₹5 lakh, a prototype, no paid pilots, no WhatsApp approval, and no healthcare legal review. Conduct the full board debate: the CEO proposal, domain-scoped objections from every specialist, evidence check, steelmanned counterarguments, visible revision tied to objections, an unambiguous final decision, remaining risks with accountable parties, sequenced execution, a single owner, a deadline, and a concrete reversal trigger.",
+  "expected_elements": [
+    {
+      "name": "original proposal section",
+      "pattern": "(?:^|\\n)##\\s*Original proposal\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "agent objections section",
+      "pattern": "(?:^|\\n)##\\s*Agent objections\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "counterarguments section",
+      "pattern": "(?:^|\\n)##\\s*Counterarguments\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "revised plan section",
+      "pattern": "(?:^|\\n)##\\s*(?:Revised plan|Counterarguments\\s*&\\s*revision)\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "final decision section",
+      "pattern": "(?:^|\\n)##\\s*Final decision\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "remaining risks section",
+      "pattern": "(?:^|\\n)##\\s*Remaining risks\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "execution steps section",
+      "pattern": "(?:^|\\n)##\\s*Execution steps\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "owner section",
+      "pattern": "(?:^|\\n)##\\s*Owner\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "deadline section",
+      "pattern": "(?:^|\\n)##\\s*Deadline\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "reversal trigger",
+      "pattern": "would reverse if|revisit if|reversal trigger",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "alignment without substance",
+      "pattern": "the team is aligned|strategy is sound|approved with minor tweaks",
+      "penalty": 1.5
+    },
+    {
+      "name": "discussion instead of decision",
+      "pattern": "further discussion needed|continue research and revisit soon",
+      "penalty": 1.5
+    },
+    {
+      "name": "dissent erased",
+      "pattern": "all agents agreed|no meaningful objections",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 7,
+  "pass_score": 7.0,
+  "improvement_suggestions": [
+    "Preserve each specialist's strongest challenge instead of averaging them.",
+    "Show exactly how the proposal changed after scrutiny.",
+    "Assign unresolved unknowns to accountable people with dates."
+  ]
+}

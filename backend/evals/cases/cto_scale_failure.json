@@ -1,0 +1,67 @@
+{
+  "id": "cto_scale_failure",
+  "agent": "cto",
+  "title": "Find the failure modes before a tenfold usage spike",
+  "scenario": "TOPIC: Prepare an invoice-extraction service for tenfold usage\nA two-person startup runs a Python service that receives invoice PDFs by email, calls one external OCR provider, lets an operator correct results, and exports CSV files nightly. It currently handles 200 invoices per day and expects a new customer to raise that to 2,000 within six weeks. There is no queue, retry policy, monitoring, backup OCR provider, authentication, or documented recovery procedure. Budget is ₹2 lakh and only one founder understands the pipeline. Rank the technical objections with impact, define the smallest reliable architecture and concrete components, state estimate ranges and assumptions, identify the single point of failure and fallbacks, propose a three-day load prototype, and give a buildability verdict.",
+  "expected_elements": [
+    {
+      "name": "impact-ranked objections",
+      "pattern": "feasibility objections?\\s*:|ranked.*(?:failure|objection)|time/cost impact",
+      "weight": 1.5
+    },
+    {
+      "name": "queue and retry design",
+      "pattern": "queue|retry|dead[- ]letter|backpressure|idempot",
+      "weight": 1.0
+    },
+    {
+      "name": "observability and recovery",
+      "pattern": "monitoring|observability|alert|recovery|backup",
+      "weight": 1.0
+    },
+    {
+      "name": "smallest reliable build",
+      "pattern": "minimal build|smallest reliable|managed queue|concrete stack",
+      "weight": 1.5
+    },
+    {
+      "name": "estimate range and assumptions",
+      "pattern": "\\d+\\s*(?:-|–|to)\\s*\\d+\\s*(?:days?|weeks?)|estimate assumptions?|assuming",
+      "weight": 1.0
+    },
+    {
+      "name": "single point and fallback",
+      "pattern": "single point of failure|bus factor|fallback|secondary OCR|manual mode",
+      "weight": 1.5
+    },
+    {
+      "name": "load prototype",
+      "pattern": "prototype.*(?:3|three) days?|load test|replay.*2,?000",
+      "weight": 1.0
+    },
+    {
+      "name": "buildability verdict",
+      "pattern": "verdict\\s*:\\s*(?:buildable as planned|buildable with cuts|not buildable)",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "premature rewrite",
+      "pattern": "rewrite (?:everything|the entire system)|microservices? for scalability",
+      "penalty": 1.5
+    },
+    {
+      "name": "dismisses reliability gap",
+      "pattern": "it should scale|it will be fine|no major technical risk",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 5,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Prioritize the failure that loses customer work before optimizing throughput.",
+    "Add a recovery path for every external dependency.",
+    "Use a controlled replay to test capacity before accepting production traffic."
+  ]
+}

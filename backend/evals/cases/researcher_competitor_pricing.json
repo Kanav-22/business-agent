@@ -1,0 +1,62 @@
+{
+  "id": "researcher_competitor_pricing",
+  "agent": "researcher",
+  "title": "Verify competitor pricing for restaurant inventory tools",
+  "scenario": "TOPIC: Research current pricing for restaurant inventory software\nA founder considering an inventory and food-waste product for independent restaurants needs current evidence, not remembered market claims. Find at least three relevant competitors serving small restaurants in India or comparable markets, record entry-tier price and included limits from primary pricing pages where available, date every perishable observation, distinguish direct observations from inferences, report source disagreement, list anything that cannot be verified, and finish with a reasoned confidence level. Do not invent private customer counts or fill gaps from memory.",
+  "expected_elements": [
+    {
+      "name": "direct-answer synthesis",
+      "pattern": "^(?:(?!Findings:)[\\s\\S]){40,500}Findings\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "multiple cited sources",
+      "pattern": "https?://[\\w.-]+[^\\s)]*[\\s\\S]*https?://[\\w.-]+[^\\s)]*",
+      "weight": 2.0
+    },
+    {
+      "name": "dated pricing observations",
+      "pattern": "(?:checked|accessed|published|updated)\\s+(?:on\\s+)?(?:\\d{4}|today|[A-Z][a-z]+\\s+\\d)",
+      "weight": 1.5
+    },
+    {
+      "name": "observation versus inference",
+      "pattern": "observation|directly observed|inference|I infer",
+      "weight": 1.0
+    },
+    {
+      "name": "source disagreement",
+      "pattern": "where sources disagree\\s*:|disagreement\\s*:|sources (?:conflict|disagree)",
+      "weight": 1.0
+    },
+    {
+      "name": "unverified gaps",
+      "pattern": "what I could not verify\\s*:|could not verify\\s*:|unverified\\s*:",
+      "weight": 1.5
+    },
+    {
+      "name": "reasoned confidence",
+      "pattern": "confidence\\s*:\\s*(?:high|medium|low)\\b[^\\n]*(?:because|due to)",
+      "weight": 2.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "uncited market assertion",
+      "pattern": "the market is growing rapidly|strong market demand|typically charge around",
+      "penalty": 1.5
+    },
+    {
+      "name": "fabricated private data",
+      "pattern": "has exactly \\d[\\d,]* customers|serves exactly \\d[\\d,]* restaurants",
+      "penalty": 2.0
+    }
+  ],
+  "min_numbers": 8,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Open primary vendor pages and preserve when each observation was made.",
+    "Separate what the page states from what you conclude about buyer behavior.",
+    "Be explicit about gaps that public material cannot resolve."
+  ]
+}

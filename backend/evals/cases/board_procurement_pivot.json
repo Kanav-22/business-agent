@@ -1,0 +1,82 @@
+{
+  "id": "board_procurement_pivot",
+  "agent": "board",
+  "title": "Board debate on pivoting a procurement platform",
+  "scenario": "TOPIC: Decide whether to pivot from procurement approvals to vendor onboarding\nA two-founder startup has ₹10 lakh left and burns ₹2.5 lakh monthly. Its procurement approval platform has 12 active free teams but zero paid conversions after five months. Nine users requested vendor-document collection and compliance reminders; two offered ₹20,000 per month for a pilot. The founders propose abandoning the current product and rebuilding a complete vendor-management suite in eight weeks. Run the complete board process, preserve domain-specific dissent, check the evidence, revise the proposal visibly, make one final decision, assign remaining risks and research tasks, sequence execution, name one owner and deadline, and state what evidence would reverse the call.",
+  "expected_elements": [
+    {
+      "name": "original proposal section",
+      "pattern": "(?:^|\\n)##\\s*Original proposal\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "agent objections section",
+      "pattern": "(?:^|\\n)##\\s*Agent objections\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "counterarguments section",
+      "pattern": "(?:^|\\n)##\\s*Counterarguments\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "revised plan section",
+      "pattern": "(?:^|\\n)##\\s*(?:Revised plan|Counterarguments\\s*&\\s*revision)\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "final decision section",
+      "pattern": "(?:^|\\n)##\\s*Final decision\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "remaining risks section",
+      "pattern": "(?:^|\\n)##\\s*Remaining risks\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "execution steps section",
+      "pattern": "(?:^|\\n)##\\s*Execution steps\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "owner section",
+      "pattern": "(?:^|\\n)##\\s*Owner\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "deadline section",
+      "pattern": "(?:^|\\n)##\\s*Deadline\\b",
+      "weight": 1.0
+    },
+    {
+      "name": "reversal trigger",
+      "pattern": "would reverse if|revisit if|reversal trigger",
+      "weight": 1.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "rubber-stamps full rebuild",
+      "pattern": "(?<!not )(?<!don't )(?:approve the (?:complete|full) (?:rebuild|suite)|build the entire suite)",
+      "penalty": 1.5
+    },
+    {
+      "name": "averages away objections",
+      "pattern": "overall everyone agrees|team is broadly aligned",
+      "penalty": 1.0
+    },
+    {
+      "name": "defers the decision",
+      "pattern": "needs further discussion|revisit at a later date",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 7,
+  "pass_score": 7.0,
+  "improvement_suggestions": [
+    "Use evidence strength to adjudicate competing specialist views.",
+    "Make every scope change traceable to the challenge that caused it.",
+    "Turn unresolved questions into assigned experiments with due dates."
+  ]
+}

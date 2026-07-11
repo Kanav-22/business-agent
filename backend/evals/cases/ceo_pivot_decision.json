@@ -1,0 +1,62 @@
+{
+  "id": "ceo_pivot_decision",
+  "agent": "ceo",
+  "title": "Decide whether to pivot a stalled procurement SaaS",
+  "scenario": "TOPIC: Decide whether a procurement SaaS should pivot after a stalled pilot\nOur two-person team has spent four months on a procurement approval SaaS for Indian manufacturers. We have ₹8 lakh left, burn ₹2 lakh monthly, completed 24 interviews, signed three unpaid pilots, and none converted after six weeks. Eight interviewees repeatedly asked for vendor-document collection instead. Decide whether to persist, pivot to that narrower workflow, or stop. Attribute the reasoning to the relevant specialist perspectives, state accepted risks, assign execution to an owner with a deadline and first steps, and give concrete reversal triggers.",
+  "expected_elements": [
+    {
+      "name": "unambiguous decision",
+      "pattern": "decision\\s*:|\\b(?:pivot|persist|stop)\\b[^.]{0,80}\\bbecause\\b",
+      "weight": 2.0
+    },
+    {
+      "name": "attributed specialist reasoning",
+      "pattern": "per the (?:CFO|CMO|CTO|COO|Researcher|Risk)|according to the (?:CFO|CMO|CTO|COO|Researcher|Risk)",
+      "weight": 1.5
+    },
+    {
+      "name": "disagreement or contrary evidence",
+      "pattern": "disagree|counterargument|contrary|however|tension",
+      "weight": 1.0
+    },
+    {
+      "name": "accepted risks",
+      "pattern": "risks? accepted\\s*:|accepted risk",
+      "weight": 1.0
+    },
+    {
+      "name": "owner and deadline",
+      "pattern": "owner\\s*:.*deadline\\s*:|deadline\\s*:.*owner\\s*:",
+      "weight": 1.5
+    },
+    {
+      "name": "sequenced first steps",
+      "pattern": "(?:first|execution) steps?\\s*:|(?:^|\\n)\\s*(?:1[.)]|step\\s*1)",
+      "weight": 1.0
+    },
+    {
+      "name": "reversal trigger",
+      "pattern": "would reverse if|revisit if|reverse(?: the)? decision if",
+      "weight": 2.0
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "non-decision language",
+      "pattern": "we should consider|explore all options|further discussion",
+      "penalty": 1.5
+    },
+    {
+      "name": "ignores conversion evidence",
+      "pattern": "continue as planned|stay the course",
+      "penalty": 1.0
+    }
+  ],
+  "min_numbers": 4,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Make the call unmistakable and connect it to the strongest observed signal.",
+    "Give a named person a dated sequence of immediate actions.",
+    "Define the evidence that would cause leadership to change course."
+  ]
+}

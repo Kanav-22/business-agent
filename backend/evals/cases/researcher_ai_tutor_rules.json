@@ -1,0 +1,67 @@
+{
+  "id": "researcher_ai_tutor_rules",
+  "agent": "researcher",
+  "title": "Research rules affecting an AI tutor for minors",
+  "scenario": "TOPIC: Verify the regulatory landscape for an AI tutor used by minors\nAn Indian startup wants schools in India and the United Kingdom to deploy a generative AI tutor for students aged 11 to 15. Before product planning, research the current rules and official guidance relevant to children's data, automated decisions, school procurement, and AI transparency in both jurisdictions. Use primary regulator or government sources where possible, date time-sensitive material, distinguish binding requirements from guidance and your own inference, surface disagreements, list what remains unverified, and state confidence. Do not provide legal advice or invent requirements when evidence is missing.",
+  "expected_elements": [
+    {
+      "name": "direct synthesis first",
+      "pattern": "^(?:(?!Findings:)[\\s\\S]){40,600}Findings\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "India and UK scope",
+      "pattern": "(?:India|Indian|DPDP)[\\s\\S]*(?:United Kingdom|UK|ICO)|(?:United Kingdom|UK|ICO)[\\s\\S]*(?:India|Indian|DPDP)",
+      "weight": 1.5
+    },
+    {
+      "name": "multiple primary citations",
+      "pattern": "https?://[\\w.-]+[^\\s)]*[\\s\\S]*https?://[\\w.-]+[^\\s)]*",
+      "weight": 2.0
+    },
+    {
+      "name": "dated material",
+      "pattern": "(?:checked|accessed|published|updated|effective)\\s+(?:on\\s+)?(?:\\d{4}|today|[A-Z][a-z]+\\s+\\d)",
+      "weight": 1.0
+    },
+    {
+      "name": "requirement versus guidance",
+      "pattern": "binding|statutory|requirement|guidance|recommendation|inference",
+      "weight": 1.0
+    },
+    {
+      "name": "source disagreement",
+      "pattern": "where sources disagree\\s*:|sources (?:conflict|disagree)|no disagreement",
+      "weight": 1.0
+    },
+    {
+      "name": "unverified questions",
+      "pattern": "what I could not verify\\s*:|could not verify\\s*:|unverified\\s*:",
+      "weight": 1.0
+    },
+    {
+      "name": "reasoned confidence",
+      "pattern": "confidence\\s*:\\s*(?:high|medium|low)\\b[^\\n]*(?:because|due to)",
+      "weight": 1.5
+    }
+  ],
+  "bad_signs": [
+    {
+      "name": "blanket legal certainty",
+      "pattern": "fully compliant|definitely legal|no legal restrictions",
+      "penalty": 2.0
+    },
+    {
+      "name": "uncited recollection",
+      "pattern": "as far as I know|from memory|I believe the law",
+      "penalty": 1.5
+    }
+  ],
+  "min_numbers": 6,
+  "pass_score": 6.5,
+  "improvement_suggestions": [
+    "Anchor each cross-border claim in authoritative public material.",
+    "Label the difference between mandatory duties and nonbinding advice.",
+    "Leave unresolved legal interpretation visible for specialist review."
+  ]
+}
