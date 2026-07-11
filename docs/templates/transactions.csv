@@ -1,0 +1,3 @@
+date,type,category,amount,description,customer_name,employee_name,campaign_name
+2026-03-01,revenue,subscription,99.00,March subscription - Northstar Analytics,Northstar Analytics,,
+2026-03-01,revenue,subscription,299.00,March subscription - Harbor Health,Harbor Health,,

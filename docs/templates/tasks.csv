@@ -1,0 +1,3 @@
+title,department,status,assignee_name,due_date,blocked_reason,created_at
+Stabilize checkout retries,Engineering,in_progress,Maya Chen,2026-03-20,,2026-03-01
+Collect vendor evidence,Operations,blocked,Omar Patel,2026-03-18,Waiting for vendor response,2026-03-02

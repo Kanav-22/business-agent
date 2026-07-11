@@ -1,0 +1,4 @@
+title,department,status,assignee_name,due_date,blocked_reason,created_at
+Ship portal beta,Engineering,in_progress,Asha Rao,2025-02-28,,2025-01-06
+Review campaign results,Marketing,done,Noah Lee,2025-02-10,,2025-02-01
+Confirm billing totals,Operations,blocked,,2025-02-14,Waiting for bank export,2025-02-03

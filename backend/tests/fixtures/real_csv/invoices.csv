@@ -1,0 +1,11 @@
+customer_name,amount,issue_date,due_date,status
+Acme Co,100.00,2025-01-01,2025-01-15,paid
+Beacon Labs,200.00,2025-01-01,2025-01-15,paid
+Cinder Health,300.00,2025-01-01,2025-01-15,paid
+Delta Retail,150.00,2025-01-01,2025-01-15,paid
+Fable Foods,120.00,2025-01-01,2025-01-15,paid
+Acme Co,100.00,2025-02-01,2025-02-15,paid
+Beacon Labs,200.00,2025-02-01,2025-02-15,paid
+Cinder Health,300.00,2025-02-01,2025-02-15,paid
+Delta Retail,150.00,2025-02-01,2025-02-15,issued
+Echo Legal,250.00,2025-02-01,2025-02-15,issued
