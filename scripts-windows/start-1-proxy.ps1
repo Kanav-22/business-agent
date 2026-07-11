@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
-# --- API key -----------------------------------------------------------------
+Write-Host "[1/3] Checking your Gemini key..." -ForegroundColor Cyan
 $keyFile = Join-Path $root "gemini-key.txt"
 if (-not (Test-Path $keyFile)) {
     "PASTE-YOUR-GEMINI-KEY-HERE" | Out-File $keyFile -Encoding ascii
@@ -13,7 +13,7 @@ $key = (Get-Content $keyFile -Raw).Trim()
 if (-not $key -or $key -eq "PASTE-YOUR-GEMINI-KEY-HERE") {
     Write-Host ""
     Write-Host "ACTION NEEDED:" -ForegroundColor Yellow
-    Write-Host "  1. A file named gemini-key.txt was just created in: $root" -ForegroundColor Yellow
+    Write-Host "  1. A file named gemini-key.txt exists in: $root" -ForegroundColor Yellow
     Write-Host "  2. Open it with Notepad, delete the placeholder text," -ForegroundColor Yellow
     Write-Host "     paste your Gemini key (starts with AIza...), and save." -ForegroundColor Yellow
     Write-Host "  3. Run this script again." -ForegroundColor Yellow
@@ -23,20 +23,30 @@ if (-not $key -or $key -eq "PASTE-YOUR-GEMINI-KEY-HERE") {
 }
 $env:GEMINI_API_KEY = $key
 
-# --- Python + LiteLLM inside the backend virtual environment ------------------
+Write-Host "[2/3] Checking Python + the proxy program..." -ForegroundColor Cyan
 $venv = Join-Path $root "backend\.venv"
 if (-not (Test-Path $venv)) {
-    Write-Host "First run: creating the Python environment (one-time)..." -ForegroundColor Cyan
-    if (Get-Command py -ErrorAction SilentlyContinue) { & py -3 -m venv $venv }
-    else { & python -m venv $venv }
+    $py = $null
+    if (Get-Command py -ErrorAction SilentlyContinue) { $py = "py" }
+    elseif (Get-Command python -ErrorAction SilentlyContinue) { $py = "python" }
+    if (-not $py) {
+        Write-Host "Python was not found in this window." -ForegroundColor Red
+        Write-Host "If you just installed it: close this window, open a NEW PowerShell, try again." -ForegroundColor Yellow
+        Write-Host "If not installed yet:  winget install Python.Python.3.12  (then new window)." -ForegroundColor Yellow
+        exit 1
+    }
+    Write-Host "      Creating the Python environment (one-time, ~30s)..." -ForegroundColor Cyan
+    if ($py -eq "py") { & py -3 -m venv $venv } else { & python -m venv $venv }
 }
 $pip = Join-Path $venv "Scripts\pip.exe"
 $litellm = Join-Path $venv "Scripts\litellm.exe"
 if (-not (Test-Path $litellm)) {
-    Write-Host "First run: installing the proxy (one-time, a few minutes)..." -ForegroundColor Cyan
-    & $pip install --quiet "litellm[proxy]"
+    Write-Host "      Installing the proxy program." -ForegroundColor Cyan
+    Write-Host "      FIRST TIME: several minutes of scrolling text. That is NORMAL." -ForegroundColor Yellow
+    Write-Host "      Do NOT close this window or press Ctrl+C - let it finish." -ForegroundColor Yellow
+    & $pip install "litellm[proxy]"
 }
 
 Write-Host ""
-Write-Host "Proxy starting on http://localhost:4000 - keep this window open." -ForegroundColor Green
+Write-Host "[3/3] Proxy running on http://localhost:4000 - KEEP THIS WINDOW OPEN." -ForegroundColor Green
 & $litellm --config (Join-Path $root "litellm_config.yaml") --port 4000
