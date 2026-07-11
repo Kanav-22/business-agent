@@ -44,10 +44,110 @@ export interface ActivityRun {
 export interface ReportSummary {
   id: number;
   title: string;
-  kind: "report" | "briefing" | "control_check" | "research" | "content";
+  kind:
+    | "report"
+    | "briefing"
+    | "control_check"
+    | "research"
+    | "content"
+    | "debate"
+    | "failure_sim"
+    | "interviews"
+    | "idea_score"
+    | "eval";
   agent: string;
   created_at: string;
   excerpt: string;
+}
+
+export interface VentureWorkflow {
+  name: string;
+  label: string;
+  description: string;
+}
+
+export interface IdeaSummary {
+  id: number;
+  title: string;
+  total_score: number;
+  verdict: "go" | "no_go" | "test_first";
+  created_at: string;
+  excerpt: string;
+}
+
+export interface IdeaDetail extends Omit<IdeaSummary, "excerpt"> {
+  description: string;
+  scores: Record<string, { score: number; rationale: string }>;
+  best_version: string;
+  worst_risk: string;
+  validation_test: string;
+  next_actions: string;
+}
+
+export interface RouteDecision {
+  category: string;
+  primary_agent: string;
+  supporting_agents: string[];
+  workflow: string[];
+  risk_level: "low" | "medium" | "high";
+  reason: string;
+  required_inputs: string[];
+  expected_output: string;
+  matched_categories: string[];
+  founder_fit_note: string | null;
+  warnings: string[];
+}
+
+export type FounderProfileKey =
+  | "skills"
+  | "weaknesses"
+  | "working_style"
+  | "risk_tolerance"
+  | "budget_range"
+  | "long_term_goals"
+  | "current_assets"
+  | "coding_ability"
+  | "business_interests"
+  | "communication_style"
+  | "decision_flaws"
+  | "how_to_challenge"
+  | "how_to_focus"
+  | "distracting_ideas"
+  | "avoid"
+  | "double_down";
+
+export type FounderProfile = Record<FounderProfileKey, string>;
+
+export interface Memory {
+  id: number;
+  category: string;
+  title: string;
+  content: string;
+  source_agent: string;
+  related_idea: string | null;
+  status: "active" | "archived";
+  created_at: string;
+}
+
+export interface PlaybookSummary {
+  slug: string;
+  title: string;
+}
+
+export interface Playbook {
+  slug: string;
+  content: string;
+}
+
+export interface EvalRow {
+  id: number;
+  case_id: string;
+  agent: string;
+  model: string;
+  score: number;
+  passed: boolean;
+  details: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface Approval {

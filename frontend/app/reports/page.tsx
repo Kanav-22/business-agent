@@ -18,6 +18,11 @@ const KIND_META: Record<
   control_check: { label: "control check", className: "border-rose-800 bg-rose-950/40 text-rose-300" },
   research: { label: "research", className: "border-amber-800 bg-amber-950/40 text-amber-300" },
   content: { label: "published content", className: "border-fuchsia-800 bg-fuchsia-950/40 text-fuchsia-300" },
+  debate: { label: "Board debate", className: "border-sky-800 bg-sky-950/40 text-sky-300" },
+  failure_sim: { label: "Failure sim", className: "border-orange-800 bg-orange-950/40 text-orange-300" },
+  interviews: { label: "Interviews", className: "border-teal-800 bg-teal-950/40 text-teal-300" },
+  idea_score: { label: "Idea score", className: "border-emerald-800 bg-emerald-950/40 text-emerald-300" },
+  eval: { label: "Eval", className: "border-cyan-800 bg-cyan-950/40 text-cyan-300" },
 };
 
 function JobButton({

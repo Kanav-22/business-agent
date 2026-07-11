@@ -185,9 +185,28 @@ Covers:
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated |
 | `SCHEDULER_ENABLED` | `1` | Monday auto-jobs (control check + briefing) |
 | `NEXT_PUBLIC_API_URL` (frontend) | `http://localhost:8000` | Backend base URL |
+| `SURVIVAL_MODE` | `0` | `1` = append downgrade-survival scaffolding to agent prompts |
+| `VENTURE_IN_CHAT` | `0` | `1` = expose venture specialists to the CEO chat roster |
 
 ## Roadmap
 
 Phase 5: real data providers (`RealBusinessProvider`: CSV/Excel import, then
 Stripe/accounting connectors), multi-tenant auth + per-business isolation, Postgres
 migration. See the spec for definitions of done.
+
+## Venture layer (Phase V)
+
+The venture layer turns the 12 audited systems—evals, survival guides, routing, debate, failure simulation, red-teaming, interviews, founder context, memory, playbooks, idea scoring, and execution schema—into a founder-facing operating loop beside the unchanged company-operations layer.
+Open **Venture Studio** at `http://localhost:3000/venture` to run workflows, inspect scored ideas, test routing, edit the founder profile, manage memories, read playbooks, and view eval results.
+
+```bash
+curl -X POST http://localhost:8000/api/venture/debate -H "Content-Type: application/json" -d '{"topic":"Should we launch a clinic scheduling product?"}'
+curl -X POST http://localhost:8000/api/venture/failure_sim -H "Content-Type: application/json" -d '{"topic":"Clinic scheduling product"}'
+curl -X POST http://localhost:8000/api/venture/interviews -H "Content-Type: application/json" -d '{"topic":"Clinic scheduling product"}'
+curl -X POST http://localhost:8000/api/venture/idea_score -H "Content-Type: application/json" -d '{"topic":"Clinic scheduling product"}'
+curl -X POST http://localhost:8000/api/route -H "Content-Type: application/json" -d '{"message":"I want to launch an AI tool for doctors."}'
+```
+
+A workflow request with a missing `topic` field returns `422`; a present but empty `topic` returns `400`.
+Run the output-quality suite from `backend/` with `DEMO_MODE=1 python3 -m evals.runner --save-report`.
+See [`docs/`](./docs/) for the operating designs and [`docs/SYSTEMS_REPORT.md`](./docs/SYSTEMS_REPORT.md) for the final implementation inventory.
