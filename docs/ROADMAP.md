@@ -11,7 +11,7 @@ per phase in `docs/tasks/`; protocol in `AGENTS.md`.
 | V4 | Evaluation system (cases, rubric, runner, README) | **Codex** (packet `V4` after V3 merges), Claude reviews | Spec ready — `docs/tasks/V4-evaluation-system.md` |
 | V5a | Venture Studio frontend + README section | **Codex** (packet `V5` after V3 merges; parallel with V4) | Spec ready — `docs/tasks/V5-frontend-venture-studio.md` |
 | V5b | `OS_TEMPLATE.md` (reusable OS blueprint) + `docs/SYSTEMS_REPORT.md` (final report) | Claude | After V3+V4 merge |
-| Final | Full-suite verification, integration review by both agents, push | Both | Last |
+| Final | **Claude's full audit-and-fix pass**: complete suite + demo end-to-end verification, line-level review of all Codex-written code, below-standard items fixed by Claude directly as labeled commits on the integration branch, findings documented in `docs/SYSTEMS_REPORT.md`; then push | Claude (Codex reviews the result) | Last |
 
 ## Sequencing rules
 

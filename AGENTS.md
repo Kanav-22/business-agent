@@ -125,6 +125,11 @@ rely on chat history alone.
 - Claude integrates accepted Codex commits into the integration branch
   (merge); trivial integration fixups happen as separate, labeled commits on
   the integration branch, never on Codex's branch.
+- Per-phase reviews are BLOCKING-focused (structure/correctness gates only).
+  At project end Claude runs a full audit-and-fix pass: complete verification,
+  line-level review of all implementer-written code, and below-standard items
+  fixed by Claude directly on the integration branch as labeled commits,
+  documented in `docs/SYSTEMS_REPORT.md`.
 - Never commit secrets, credentials, `.env` files, or private data.
 
 ### Task packets
