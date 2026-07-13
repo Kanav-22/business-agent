@@ -16,6 +16,7 @@ import {
   Save,
   Sparkles,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { API_BASE, getJson } from "@/lib/api";
 import type {
   BusinessProfile,
@@ -445,21 +446,13 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto min-w-0 max-w-5xl p-4 sm:p-8">
-      <header className="mb-6">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-            <ClipboardList size={20} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-slate-100">Business Setup</h1>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-              Teach the operating system how the business really works. Answers autosave as
-              you move through the interview.
-            </p>
-          </div>
-        </div>
+      <div className="mb-6">
+        <PageHeader
+          title="Business Setup"
+          subtitle="Teach the operating system how the business really works. Answers autosave as you move through the interview."
+        />
 
-        <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-medium text-slate-300">
               {completedCount}/{sectionCount} sections completed
@@ -482,7 +475,7 @@ export default function OnboardingPage() {
             />
           </div>
         </div>
-      </header>
+      </div>
 
       <nav aria-label="Business setup steps" className="mb-6 flex flex-wrap gap-2">
         {stepLabels.map((label, index) => {

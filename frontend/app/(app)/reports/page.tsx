@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import { Download, FileText, Loader2, Play, ShieldCheck, Newspaper } from "lucide-react";
 import { Markdown } from "@/components/markdown";
+import { PageHeader } from "@/components/page-header";
 import { API_BASE, getJson } from "@/lib/api";
 import type { ReportDetail, ReportSummary } from "@/lib/types";
 
@@ -101,37 +102,45 @@ export default function ReportsPage() {
     getJson<ReportDetail>(`/api/reports/${id}`).then(setSelected).catch(() => {});
 
   return (
-    <div className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Reports</h1>
-          <p className="text-sm text-slate-500">
-            Generated documents — weekly briefings and control checks arrive every
-            Monday morning on their own.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <JobButton
-            job="weekly_control"
-            label="Run control check"
-            icon={ShieldCheck}
-            onDone={load}
-          />
-          <JobButton
-            job="weekly_briefing"
-            label="Generate briefing"
-            icon={Newspaper}
-            onDone={load}
-          />
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Reports"
+        subtitle="Generated documents — weekly briefings and control checks arrive every Monday morning on their own."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <JobButton
+              job="weekly_control"
+              label="Run control check"
+              icon={ShieldCheck}
+              onDone={load}
+            />
+            <JobButton
+              job="weekly_briefing"
+              label="Generate briefing"
+              icon={Newspaper}
+              onDone={load}
+            />
+          </div>
+        }
+      />
 
       {error ? (
         <div className="rounded-lg border border-red-900/60 bg-red-950/40 p-4 text-sm text-red-300">
           Could not reach the backend ({error}).
         </div>
       ) : reports === null ? (
-        <div className="text-sm text-slate-500">Loading…</div>
+        <div className="grid gap-4 lg:grid-cols-[320px,1fr]" role="status">
+          <div className="space-y-2">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div
+                key={index}
+                className="h-24 animate-pulse rounded-xl border border-slate-800 bg-slate-900 motion-reduce:animate-none"
+              />
+            ))}
+          </div>
+          <div className="h-72 animate-pulse rounded-xl border border-slate-800 bg-slate-900 motion-reduce:animate-none" />
+          <span className="sr-only">Loading reports…</span>
+        </div>
       ) : reports.length === 0 ? (
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-8 text-center text-sm text-slate-500">
           No reports yet. Use the buttons above, ask the Reporting agent for a P&L

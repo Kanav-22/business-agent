@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { Markdown } from "@/components/markdown";
+import { PageHeader, PageHeaderSkeleton } from "@/components/page-header";
 import { RevenueChart } from "@/components/revenue-chart";
 import { fmtMoney, fmtMonthLabel, getJson } from "@/lib/api";
 import type { Kpis, MonthPoint, ReportDetail } from "@/lib/types";
@@ -77,9 +78,12 @@ export default function OverviewPage() {
 
   if (error) {
     return (
-      <div className="p-8">
-        <h1 className="text-lg font-semibold">Overview</h1>
-        <div className="mt-4 rounded-lg border border-red-900/60 bg-red-950/40 p-4 text-sm text-red-300">
+      <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        <PageHeader
+          title="Overview"
+          subtitle="Business performance, cash position, and current operating priorities."
+        />
+        <div className="rounded-lg border border-red-900/60 bg-red-950/40 p-4 text-sm text-red-300">
           Could not reach the backend ({error}). Start it with{" "}
           <code className="rounded bg-slate-900 px-1.5 py-0.5 text-xs">
             uvicorn app.main:app --reload
@@ -92,7 +96,19 @@ export default function OverviewPage() {
 
   if (!kpis || !series) {
     return (
-      <div className="p-8 text-sm text-slate-500">Loading mission control…</div>
+      <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        <PageHeaderSkeleton />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6" role="status">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div
+              key={index}
+              className="h-28 animate-pulse rounded-xl border border-slate-800 bg-slate-900 motion-reduce:animate-none"
+            />
+          ))}
+          <span className="sr-only">Loading mission control…</span>
+        </div>
+        <div className="mt-6 h-80 animate-pulse rounded-xl border border-slate-800 bg-slate-900 motion-reduce:animate-none" />
+      </div>
     );
   }
 
@@ -100,15 +116,12 @@ export default function OverviewPage() {
   const profit = kpis.last_month_profit;
 
   return (
-    <div className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Overview</h1>
-          <p className="text-sm text-slate-500">
-            {kpis.company} · data through {lastMonth}
-          </p>
-        </div>
-        <div className="text-right text-xs text-slate-500">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Overview"
+        subtitle={`${kpis.company} · data through ${lastMonth}`}
+        actions={
+          <div className="text-left text-xs text-slate-500 sm:text-right">
           {lastMonth} P&L:{" "}
           <span
             className={profit >= 0 ? "text-emerald-400" : "text-orange-400"}
@@ -116,8 +129,9 @@ export default function OverviewPage() {
             {profit >= 0 ? "+" : "−"}
             {fmtMoney(Math.abs(profit))}
           </span>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <BriefingCard briefing={briefing} />
 
