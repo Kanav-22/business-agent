@@ -28,7 +28,7 @@ per phase in `docs/tasks/`; protocol in `AGENTS.md`.
 | V6 | RealBusinessProvider: validated CSV import + CLI + templates (`docs/tasks/V6-TASK-PACKET.md`) | **Codex**, Claude reviews | **Done** — Codex (`79b141d`), ACCEPTED (`docs/tasks/V6-REVIEW.md`), merged; 159/159 tests |
 | V7 | Business Intake: owner interview + own-words narratives + uploads + context injection + analyst review (`docs/tasks/V7-TASK-PACKET.md`) | **Codex** (after V6 merges), Claude reviews | **Done** — Codex (`c31c9e9`), ACCEPTED (`docs/tasks/V7-REVIEW.md`), merged; 168/168 tests |
 | V8 | Sellable frontend: 3D marketing landing page + branded product shell (`docs/tasks/V8-TASK-PACKET.md`) | **Codex** (after V7 merges), Claude reviews | **Done** — Codex (`17bf401`), ACCEPTED (`docs/tasks/V8-REVIEW.md`), merged; build green, 168/168 tests |
-| V9 | Swap the static Lumina company context in operations prompts for the stored business profile (prompt refactor) | unassigned | Sketched in V7 spec §3 |
+| V9 | Dynamic company context: operations prompts adopt the stored business identity (`docs/tasks/V9-TASK-PACKET.md`) | **Codex**, Claude reviews | Ready |
 
 ## Post-V (future, not scheduled)
 
