@@ -6,6 +6,8 @@ the practical path to pointing it at YOUR business. The venture layer needs
 no connection — it already works on your inputs (ideas, founder profile,
 memories).
 
+Operations agents pick up the business profile at backend startup — restart after completing intake.
+
 ## The two paths
 
 **Path A — load your data into the existing schema (available today).**

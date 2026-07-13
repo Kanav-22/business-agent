@@ -49,18 +49,17 @@ from app.venture.agents import (
     VENTURE_CMO_SYSTEM_PROMPT,
     VENTURE_CTO_SYSTEM_PROMPT,
 )
-from app.venture.intake import business_context
+from app.venture.intake import (
+    DEFAULT_COMPANY_CONTEXT,
+    business_context,
+    company_context_line,
+)
 
 # Kept as a public alias — used by tests and by the finance schema docs.
 FINANCE_SCHEMA_DOC = build_schema_doc(FINANCE_TABLES)
 
 WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 5}
 WEB_FETCH_TOOL = {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 5}
-
-_COMPANY_CONTEXT = (
-    "Lumina Labs, a 12-person B2B SaaS analytics company (plans: starter $99, "
-    "growth $299, scale $899 per month)."
-)
 
 _GROUNDING_RULES = """\
 Method — follow it every time:
@@ -81,8 +80,9 @@ Financial conventions for this company:
 If average burn is zero or negative, runway is effectively infinite — say so.
 - MRR = SUM(mrr) of customers WHERE churn_date IS NULL."""
 
-FPA_SYSTEM_PROMPT = f"""\
-You are the FP&A agent of {_COMPANY_CONTEXT} You handle financial planning & analysis: \
+def build_fpa_prompt(company: str) -> str:
+    return f"""\
+You are the FP&A agent of {company} You handle financial planning & analysis: \
 profit, burn, runway, cash, budget-vs-actual and forecasts.
 
 {_GROUNDING_RULES}
@@ -96,8 +96,12 @@ recent MoM growth applied forward) and STATE your assumptions.
 Database schema you can query:
 {build_schema_doc(FINANCE_TABLES)}"""
 
-REPORTING_SYSTEM_PROMPT = f"""\
-You are the Reporting agent of {_COMPANY_CONTEXT} You produce formal finance documents \
+FPA_SYSTEM_PROMPT = build_fpa_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_reporting_prompt(company: str) -> str:
+    return f"""\
+You are the Reporting agent of {company} You produce formal finance documents \
 (P&L statements, expense breakdowns, monthly summaries).
 
 {_GROUNDING_RULES}
@@ -113,8 +117,12 @@ tables for figures).
 Database schema you can query:
 {build_schema_doc(FINANCE_TABLES)}"""
 
-REVENUE_SYSTEM_PROMPT = f"""\
-You are the Revenue agent of {_COMPANY_CONTEXT} You handle accounts receivable and \
+REPORTING_SYSTEM_PROMPT = build_reporting_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_revenue_prompt(company: str) -> str:
+    return f"""\
+You are the Revenue agent of {company} You handle accounts receivable and \
 revenue quality: invoices (issued/paid/overdue), MRR movements, churn and expansion.
 
 {_GROUNDING_RULES}
@@ -127,8 +135,12 @@ Revenue conventions:
 Database schema you can query:
 {build_schema_doc(REVENUE_TABLES)}"""
 
-CONTROL_SYSTEM_PROMPT = f"""\
-You are the Control agent of {_COMPANY_CONTEXT} You run reconciliation and anomaly \
+REVENUE_SYSTEM_PROMPT = build_revenue_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_control_prompt(company: str) -> str:
+    return f"""\
+You are the Control agent of {company} You run reconciliation and anomaly \
 checks — you are the skeptic of the finance team.
 
 {_GROUNDING_RULES}
@@ -152,8 +164,19 @@ Use python_calc for arithmetic.
 Database schema you can query:
 {build_schema_doc(CONTROL_TABLES)}"""
 
-CFO_SYSTEM_PROMPT = """\
-You are the CFO agent of Lumina Labs, a 12-person B2B SaaS analytics company. You lead \
+CONTROL_SYSTEM_PROMPT = build_control_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def _leadership_company_context(company: str) -> str:
+    if company == DEFAULT_COMPANY_CONTEXT:
+        return company.partition(" (plans:")[0] + "."
+    return company
+
+
+def build_cfo_prompt(company: str) -> str:
+    leadership_company = _leadership_company_context(company)
+    return f"""\
+You are the CFO agent of {leadership_company} You lead \
 the finance team; your job is routing finance work to your sub-team and synthesizing \
 their answers — NOT answering from memory.
 
@@ -173,8 +196,12 @@ Your sub-team (use these exact names with delegate_to_agent):
 - revenue — invoices, AR, MRR movements, churn/expansion
 - control — reconciliation and anomaly checks"""
 
-CONTENT_SYSTEM_PROMPT = f"""\
-You are the Content agent of {_COMPANY_CONTEXT} You draft marketing content: blog \
+CFO_SYSTEM_PROMPT = build_cfo_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_content_prompt(company: str) -> str:
+    return f"""\
+You are the Content agent of {company} You draft marketing content: blog \
 posts, emails, social posts, launch announcements.
 
 Method:
@@ -189,8 +216,12 @@ so always finish by submitting.
 
 Reply after submitting with the draft id and a one-line summary."""
 
-CMO_SYSTEM_PROMPT = f"""\
-You are the CMO agent of {_COMPANY_CONTEXT} You answer marketing questions — campaign \
+CONTENT_SYSTEM_PROMPT = build_content_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_cmo_prompt(company: str) -> str:
+    return f"""\
+You are the CMO agent of {company} You answer marketing questions — campaign \
 performance, channels, acquisition, CAC, lead quality — and you commission marketing \
 content.
 
@@ -213,8 +244,12 @@ in Approvals.
 Database schema you can query:
 {build_schema_doc(MARKETING_TABLES)}"""
 
-CTO_SYSTEM_PROMPT = f"""\
-You are the CTO agent of {_COMPANY_CONTEXT} You answer engineering questions: project \
+CMO_SYSTEM_PROMPT = build_cmo_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_cto_prompt(company: str) -> str:
+    return f"""\
+You are the CTO agent of {company} You answer engineering questions: project \
 status, deadlines, risk, team capacity and blockers.
 
 {_GROUNDING_RULES}
@@ -228,8 +263,12 @@ past; 'at_risk' projects deserve a one-line explanation from their description.
 Database schema you can query:
 {build_schema_doc(ENGINEERING_TABLES)}"""
 
-RESEARCHER_SYSTEM_PROMPT = f"""\
-You are the Researcher agent of {_COMPANY_CONTEXT} You answer questions about the \
+CTO_SYSTEM_PROMPT = build_cto_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_researcher_prompt(company: str) -> str:
+    return f"""\
+You are the Researcher agent of {company} You answer questions about the \
 outside world: competitors, market trends, pricing landscapes, technology choices.
 
 Method:
@@ -240,8 +279,12 @@ Use web_search (and web_fetch for specific pages) for everything.
 
 Answer style: a short synthesis first, then bullet points with citations."""
 
-COORDINATOR_SYSTEM_PROMPT = f"""\
-You are the Workflow Coordinator agent of {_COMPANY_CONTEXT} You manage the \
+RESEARCHER_SYSTEM_PROMPT = build_researcher_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_coordinator_prompt(company: str) -> str:
+    return f"""\
+You are the Workflow Coordinator agent of {company} You manage the \
 cross-department task list: what's open, in progress, blocked and overdue — and you \
 create new tasks when asked.
 
@@ -256,8 +299,13 @@ Only create tasks that were explicitly requested.
 Database schema you can query:
 {build_schema_doc(WORKFLOW_TABLES)}"""
 
-CEO_SYSTEM_PROMPT = """\
-You are the CEO orchestrator agent of Lumina Labs, a 12-person B2B SaaS analytics company.
+COORDINATOR_SYSTEM_PROMPT = build_coordinator_prompt(DEFAULT_COMPANY_CONTEXT)
+
+
+def build_ceo_prompt(company: str) -> str:
+    leadership_company = _leadership_company_context(company)
+    return f"""\
+You are the CEO orchestrator agent of {leadership_company}
 
 Your job is routing and synthesis — NOT answering. Rules:
 1. Never answer business/domain questions from your own knowledge or memory. Every fact \
@@ -282,6 +330,9 @@ specialist errored, say so plainly.
 specialists and say plainly what you cannot cover. Do not fill gaps with your own \
 guesses.
 8. Simple greetings or questions about your own capabilities you may answer directly."""
+
+
+CEO_SYSTEM_PROMPT = build_ceo_prompt(DEFAULT_COMPANY_CONTEXT)
 
 
 def _preview(text: str, limit: int = 6000) -> str:
@@ -315,6 +366,11 @@ class AgentService:
         self.settings = settings
         self.logger = logger or DecisionLogger(settings.logs_dir)
         self.engine = make_engine(settings.db_path)
+        try:
+            self.company_context = company_context_line(self.engine)
+        except Exception:
+            self.company_context = DEFAULT_COMPANY_CONTEXT
+        company = self.company_context
         self._client: Any = None
         self._client_factory = client_factory or self._default_client_factory
 
@@ -367,7 +423,7 @@ class AgentService:
                 "Planning & analysis: profit, burn, runway, cash, budget vs "
                 "actual, forecasts.",
                 "#2dd4bf",
-                FPA_SYSTEM_PROMPT,
+                build_fpa_prompt(company),
                 _registry(sql_tool(FINANCE_TABLES), make_python_calc_tool()),
                 ["sql_query", "python_calc"],
             ),
@@ -377,7 +433,7 @@ class AgentService:
                 "Formal finance documents (P&L, expense breakdowns), saved to "
                 "the reports library.",
                 "#a3e635",
-                REPORTING_SYSTEM_PROMPT,
+                build_reporting_prompt(company),
                 _registry(sql_tool(FINANCE_TABLES), make_report_writer_tool(self.engine)),
                 ["sql_query", "report_writer"],
             ),
@@ -387,7 +443,7 @@ class AgentService:
                 "Accounts receivable, invoices (issued/paid/overdue), MRR "
                 "movements, churn and expansion.",
                 "#4ade80",
-                REVENUE_SYSTEM_PROMPT,
+                build_revenue_prompt(company),
                 _registry(sql_tool(REVENUE_TABLES)),
                 ["sql_query"],
             ),
@@ -397,7 +453,7 @@ class AgentService:
                 "Reconciliation and anomaly checks: does the data add up, what "
                 "moved unexpectedly.",
                 "#fb7185",
-                CONTROL_SYSTEM_PROMPT,
+                build_control_prompt(company),
                 _registry(sql_tool(CONTROL_TABLES), make_python_calc_tool()),
                 ["sql_query", "python_calc"],
             ),
@@ -411,7 +467,7 @@ class AgentService:
                 "Drafts marketing content (blog posts, emails, social, "
                 "announcements); every draft goes to the human Approvals inbox.",
                 "#e879f9",
-                CONTENT_SYSTEM_PROMPT,
+                build_content_prompt(company),
                 _registry(make_content_writer_tool(self.engine)),
                 ["content_writer"],
                 server_tools=[WEB_SEARCH_TOOL],
@@ -427,7 +483,7 @@ class AgentService:
                 "invoices, payroll, reports, reconciliation. Leads the finance "
                 "sub-team (FP&A, Reporting, Revenue, Control).",
                 "#34d399",
-                CFO_SYSTEM_PROMPT,
+                build_cfo_prompt(company),
                 _registry(self._make_delegate_tool(self.finance_team)),
                 ["delegate_to_agent"],
             ),
@@ -438,7 +494,7 @@ class AgentService:
                 "conversions, acquisition trends, market benchmarks; commissions "
                 "content drafts (via its Content sub-agent → Approvals inbox).",
                 "#f472b6",
-                CMO_SYSTEM_PROMPT,
+                build_cmo_prompt(company),
                 _registry(
                     sql_tool(MARKETING_TABLES),
                     self._make_delegate_tool(self.content_team),
@@ -452,7 +508,7 @@ class AgentService:
                 "Engineering: project status, deadlines, at-risk work, blocked "
                 "engineering tasks, team capacity.",
                 "#38bdf8",
-                CTO_SYSTEM_PROMPT,
+                build_cto_prompt(company),
                 _registry(sql_tool(ENGINEERING_TABLES)),
                 ["sql_query"],
             ),
@@ -462,7 +518,7 @@ class AgentService:
                 "External research: competitors, market trends, pricing "
                 "landscapes, technology evaluations. Web only — no internal data.",
                 "#fbbf24",
-                RESEARCHER_SYSTEM_PROMPT,
+                build_researcher_prompt(company),
                 _registry(),
                 [],
                 server_tools=[WEB_SEARCH_TOOL, WEB_FETCH_TOOL],
@@ -473,7 +529,7 @@ class AgentService:
                 "Workflow: the cross-department task list — open/blocked/overdue "
                 "work — and creating new tasks.",
                 "#94a3b8",
-                COORDINATOR_SYSTEM_PROMPT,
+                build_coordinator_prompt(company),
                 _registry(sql_tool(WORKFLOW_TABLES), make_create_task_tool(self.engine)),
                 ["sql_query", "create_task"],
             ),
@@ -598,7 +654,7 @@ class AgentService:
             "CEO",
             "Orchestrator: routes requests to specialists (in parallel) and synthesizes.",
             "#a78bfa",
-            CEO_SYSTEM_PROMPT,
+            build_ceo_prompt(company),
             _registry(self._make_roster_tool(), self._make_delegate_tool(ceo_roster)),
             ["get_agent_roster", "delegate_to_agent"],
         )

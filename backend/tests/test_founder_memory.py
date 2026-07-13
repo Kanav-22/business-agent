@@ -22,6 +22,7 @@ from app.main import create_app
 from app.tools.base import ToolError
 from app.tools.save_memory import make_save_memory_tool
 from app.venture.founder import FOUNDER_KEYS, founder_context, set_founder_profile
+from app.venture.intake import set_business_profile
 
 
 @pytest.fixture()
@@ -166,22 +167,32 @@ def test_service_wiring_default_and_flags(settings):
 
 
 @pytest.mark.parametrize("survival", [False, True], ids=["default", "survival_mode"])
-def test_every_agent_prompt_resolves_to_its_own_demo_handler(settings, survival):
+@pytest.mark.parametrize("profiled", [False, True], ids=["empty_profile", "real_profile"])
+def test_every_agent_prompt_resolves_to_its_own_demo_handler(
+    writable_settings, survival, profiled
+):
     """The demo-mode marker table must uniquely identify every agent —
     including the new venture agents — from its system prompt, with and
     without the survival-mode injections (which must not add marker text)."""
-    settings.survival_mode = survival
-    try:
-        service = make_service(settings)
-    finally:
-        settings.survival_mode = False
-    for agent in service.all_agents():
-        matched = next(
-            (name for marker, name in _MARKERS if marker in agent.config.system_prompt),
-            None,
+    if profiled:
+        set_business_profile(
+            make_engine(writable_settings.db_path),
+            {
+                "name": "Marker Safe Company",
+                "description_own_words": "We test prompt routing without collisions.",
+            },
         )
-        assert matched == agent.config.name, (
-            f"{agent.config.name} resolved to {matched!r} in demo mode"
+    writable_settings.survival_mode = survival
+    try:
+        service = make_service(writable_settings)
+    finally:
+        writable_settings.survival_mode = False
+    for agent in service.all_agents():
+        matches = [
+            name for marker, name in _MARKERS if marker in agent.config.system_prompt
+        ]
+        assert matches == [agent.config.name], (
+            f"{agent.config.name} resolved to {matches!r} in demo mode"
         )
 
 

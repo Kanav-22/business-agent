@@ -1,12 +1,14 @@
 """V7 business intake: interview data, context, uploads, and analyst review."""
 from __future__ import annotations
 
+import hashlib
 import inspect
 import shutil
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.agents import service as service_module
 from app.agents.service import AgentService
 from app.agents.simulated import _MARKERS
 from app.api.reports import get_report, list_reports, save_report
@@ -16,9 +18,11 @@ from app.main import create_app
 from app.venture import intake as intake_module
 from app.venture.intake import (
     BUSINESS_KEYS,
+    DEFAULT_COMPANY_CONTEXT,
     INTAKE_QUESTIONS,
     UPLOAD_MANIFEST,
     business_context,
+    company_context_line,
     get_business_profile,
     set_business_profile,
 )
@@ -78,6 +82,20 @@ EXPECTED_BUSINESS_KEYS = {
     "goals_12mo",
     "constraints",
     "avoid",
+}
+
+LEGACY_PROMPT_HASHES = {
+    "FPA": "7f33f648031757b4437b3bf814e545862c4fe1a0e50450bbb2555650928e84f0",
+    "REPORTING": "5122ad07e850182f880cf3992825d1d998ab591f8c338c55b821138ef64464e1",
+    "REVENUE": "52375ab4b203fdc7ae556a3478fbefd1f3cbbbf1beed9249372345f9636a7dae",
+    "CONTROL": "c68c9b20e12f835606654e61b85b67cb62de4c282a01f1516052175ba1835ac2",
+    "CFO": "d929c31c1d058ff745af6b2c8e43cf367453b68c269b5d45ad13b9bbee3ef55b",
+    "CONTENT": "f19fbd16ad23481829f5a50fcd6311d46ec7ca4319fd4b528d271c658a5c2ee3",
+    "CMO": "9fd6314697ec67f9429cbcfe1b3d988c60ec42e7d2ec58f0738bd7f903d1066b",
+    "CTO": "5bcbc327469700406b23d7f6f39ced729817aa3679c40073bc3fcbcb2892eeb2",
+    "RESEARCHER": "bd2bc2f1ebf2e6a6a1f88908e1903038926f36fe7108e7cfbad20e618fd2ba9a",
+    "COORDINATOR": "2a147a762795537d7b42f0e2779995f8fae59e5f2ead4db3aab5087b1f37cc77",
+    "CEO": "097305e5846aa705dfff8c699e7c91705a75654ae9f5f67f4f5b247a62813cfe",
 }
 
 
@@ -147,6 +165,148 @@ def test_business_profile_roundtrip_caps_and_context(writable_engine):
 
     with pytest.raises(ValueError, match="unknown.*business.*keys"):
         set_business_profile(writable_engine, {"secret_strategy": "nope"})
+
+
+def test_operations_prompts_are_byte_identical_without_a_profile(writable_settings):
+    service = AgentService(writable_settings, client_factory=lambda: None)
+    actual_prompts = {
+        "FPA": service.finance_team["fpa"].config.system_prompt,
+        "REPORTING": service.finance_team["reporting"].config.system_prompt,
+        "REVENUE": service.finance_team["revenue"].config.system_prompt,
+        "CONTROL": service.finance_team["control"].config.system_prompt,
+        "CFO": service.specialists["cfo"].config.system_prompt,
+        "CONTENT": service.content_team["content"].config.system_prompt,
+        "CMO": service.specialists["cmo"].config.system_prompt,
+        "CTO": service.specialists["cto"].config.system_prompt,
+        "RESEARCHER": service.specialists["researcher"].config.system_prompt,
+        "COORDINATOR": service.specialists["coordinator"].config.system_prompt,
+        "CEO": service.ceo.config.system_prompt,
+    }
+
+    for name, expected_hash in LEGACY_PROMPT_HASHES.items():
+        legacy = getattr(service_module, f"{name}_SYSTEM_PROMPT")
+        builder = getattr(service_module, f"build_{name.lower()}_prompt")
+        assert hashlib.sha256(legacy.encode()).hexdigest() == expected_hash
+        assert builder(DEFAULT_COMPANY_CONTEXT) == legacy
+        assert actual_prompts[name] == legacy
+
+
+def test_operations_prompts_use_the_saved_business_identity(writable_settings):
+    service_before = AgentService(writable_settings, client_factory=lambda: None)
+    set_business_profile(
+        make_engine(writable_settings.db_path),
+        {
+            "name": "Weekend Kitchens",
+            "description_own_words": "We rent licensed kitchens by the hour.",
+        },
+    )
+
+    service = AgentService(writable_settings, client_factory=lambda: None)
+    assert service_before.ceo.config.system_prompt == service_module.CEO_SYSTEM_PROMPT
+    expected = "Weekend Kitchens. We rent licensed kitchens by the hour."
+    assert service.company_context == expected
+    operations_agents = (
+        *service.finance_team.values(),
+        *service.specialists.values(),
+        *service.content_team.values(),
+        service.ceo,
+    )
+    for agent in operations_agents:
+        assert expected in agent.config.system_prompt
+        assert "Lumina Labs" not in agent.config.system_prompt
+
+
+def test_service_construction_falls_back_when_context_lookup_fails(
+    writable_settings, monkeypatch
+):
+    def broken_context(engine):
+        raise RuntimeError("database locked")
+
+    monkeypatch.setattr(service_module, "company_context_line", broken_context)
+    service = AgentService(writable_settings, client_factory=lambda: None)
+    assert service.company_context == DEFAULT_COMPANY_CONTEXT
+    assert service.ceo.config.system_prompt == service_module.CEO_SYSTEM_PROMPT
+
+
+def test_company_context_line_fallback_sanitization_and_cap(
+    writable_engine, monkeypatch
+):
+    assert company_context_line(writable_engine) == DEFAULT_COMPANY_CONTEXT
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "",
+            "description_own_words": "This must be ignored without a name.",
+            "pricing_summary": "$10 per month",
+        },
+    )
+    assert company_context_line(writable_engine) == DEFAULT_COMPANY_CONTEXT
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "  North\nStar  ",
+            "description_own_words": (
+                "We help field teams\nclose reports quickly. "
+                "Second sentence should not be copied. "
+                + "x" * 500
+            ),
+        },
+    )
+    context = company_context_line(writable_engine)
+    assert context == "North Star. We help field teams close reports quickly."
+    assert "\n" not in context
+    assert len(context) <= 300
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "Simple Pricing",
+            "description_own_words": "",
+            "pricing_summary": "$49 per month",
+        },
+    )
+    assert company_context_line(writable_engine) == "Simple Pricing. $49 per month."
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "Punctuation Description",
+            "description_own_words": "...",
+            "pricing_summary": "$99 per month",
+        },
+    )
+    assert company_context_line(writable_engine) == "Punctuation Description."
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "Bounded Detail",
+            "description_own_words": "word " * 100,
+        },
+    )
+    bounded = company_context_line(writable_engine)
+    detail = bounded[len("Bounded Detail. ") : -1]
+    assert 0 < len(detail) <= 200
+
+    set_business_profile(
+        writable_engine,
+        {
+            "name": "N" * 280,
+            "description_own_words": "A description that forces the total over the cap.",
+        },
+    )
+    capped = company_context_line(writable_engine)
+    assert len(capped) == 300
+    assert capped.endswith(".")
+
+    monkeypatch.setattr(
+        intake_module,
+        "get_business_profile",
+        lambda engine: (_ for _ in ()).throw(RuntimeError("database locked")),
+    )
+    assert company_context_line(writable_engine) == DEFAULT_COMPANY_CONTEXT
 
 
 def test_business_and_questions_api_contract(writable_settings):

@@ -13,6 +13,7 @@ from app.main import create_app
 from app.scheduler import run_weekly_competitor_scan
 from app.tools.base import ToolError
 from app.tools.content_writer import validate_content_input
+from app.venture.intake import set_business_profile
 from fastapi.testclient import TestClient
 from tests.fake_anthropic import FakeClient, response, text_block, tool_use_block
 
@@ -165,20 +166,31 @@ def test_approve_publishes_and_reject_does_not(settings, tmp_path):
 
 async def test_weekly_competitor_scan_saves_research_report(settings, tmp_path):
     settings = writable_settings(settings, tmp_path)
+    engine = make_engine(settings.db_path)
+    set_business_profile(
+        engine,
+        {
+            "name": "Weekend Kitchens",
+            "description_own_words": "We rent licensed kitchens by the hour.",
+        },
+    )
     responses = {
         "Researcher agent": [
             response([text_block("Rival Analytics cut Pro to $79 (https://example.com/pricing). "
                                  "Implication: pressure on our starter tier.")]),
         ],
     }
-    service, _ = make_service(settings, responses)
-    engine = make_engine(settings.db_path)
+    service, fake = make_service(settings, responses)
     report_id = await run_weekly_competitor_scan(service, engine)
 
     reports = list_reports(engine, kind="research")
     assert [r["id"] for r in reports] == [report_id]
     assert reports[0]["agent"] == "researcher"
     assert "Competitor scan" in reports[0]["title"]
+    task = fake.calls[0]["messages"][0]["content"]
+    assert "Weekend Kitchens" in task
+    assert "We rent licensed kitchens by the hour" in task
+    assert "Lumina Labs" not in task
 
 
 def test_content_agent_wiring(settings):
