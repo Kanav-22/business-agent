@@ -30,10 +30,18 @@ per phase in `docs/tasks/`; protocol in `AGENTS.md`.
 | V8 | Sellable frontend: 3D marketing landing page + branded product shell (`docs/tasks/V8-TASK-PACKET.md`) | **Codex** (after V7 merges), Claude reviews | **Done** — Codex (`17bf401`), ACCEPTED (`docs/tasks/V8-REVIEW.md`), merged; build green, 168/168 tests |
 | V9 | Dynamic company context: operations prompts adopt the stored business identity (`docs/tasks/V9-TASK-PACKET.md`) | **Codex**, Claude reviews | **Done** — Codex (`3c1b19b`), ACCEPTED (`docs/tasks/V9-REVIEW.md`), merged; 174/174 tests |
 
-## Post-V (future, not scheduled)
+## Second wave (queued by the architect while the owner rests — see `docs/tasks/QUEUE.md`)
 
-- Phase 5 of the original spec: `RealBusinessProvider` (CSV/Stripe),
-  multi-tenant auth, Postgres.
+| Phase | Scope | Owner | Status |
+|-------|-------|-------|--------|
+| V10 | CI pipeline: pytest + frontend build on every push (`docs/tasks/V10-ci-pipeline.md`) | **Codex**, Claude reviews | Ready |
+| V11 | Evals dashboard page + advisory LLM-judge mode (`docs/tasks/V11-evals-dashboard.md`) | **Codex** (after V10), Claude reviews | Ready |
+| V12 | Monday Founder Briefing: code-built digest + venture-CEO narrative, lands on Overview (`docs/tasks/V12-founder-briefing.md`) | **Codex** (after V11), Claude reviews | Ready |
+
+## Post-V (future, not scheduled — product decisions reserved for the owner)
+
+- Phase 5 of the original spec: multi-tenant auth, Postgres, Stripe/accounting
+  connectors (CSV import shipped in V6).
 - Embedding-based memory retrieval (design in `docs/MEMORY_SYSTEM.md`).
 - Eval LLM-judge mode; eval dashboard page.
 - `businesses`/`experiments`/`meetings` tables (design in
