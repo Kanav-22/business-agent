@@ -15,7 +15,6 @@ import {
   Loader2,
   MessageSquareText,
   Play,
-  Rocket,
   Route as RouteIcon,
   Save,
   ShieldAlert,
@@ -24,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Markdown } from "@/components/markdown";
+import { PageHeader } from "@/components/page-header";
 import { API_BASE, getJson } from "@/lib/api";
 import type {
   EvalRow,
@@ -205,9 +205,10 @@ function Section({
 
 function LoadingState({ label }: { label: string }) {
   return (
-    <div className="flex min-h-24 items-center justify-center gap-2 text-sm text-slate-400" role="status">
-      <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-      {label}
+    <div className="grid min-h-24 gap-3 sm:grid-cols-2" role="status">
+      <div className="h-20 animate-pulse rounded-xl border border-slate-800 bg-slate-950/60 motion-reduce:animate-none" />
+      <div className="h-20 animate-pulse rounded-xl border border-slate-800 bg-slate-950/60 motion-reduce:animate-none" />
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
@@ -532,21 +533,12 @@ export default function VentureStudioPage() {
   return (
     <div className="min-w-0 overflow-x-hidden">
       <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
-        <header className="relative overflow-hidden rounded-2xl border border-violet-900/60 bg-gradient-to-br from-violet-950/70 via-slate-900 to-slate-950 p-5 sm:p-8">
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" aria-hidden="true" />
-          <div className="relative flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-700/60 bg-violet-500/15 text-violet-300">
-              <Rocket size={23} aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-300">Venture layer</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50 sm:text-3xl">Venture Studio</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300 sm:text-base">
-                Pressure-test ideas, route high-stakes decisions, and keep founder context in one operating surface.
-              </p>
-            </div>
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Venture layer"
+          title="Venture Studio"
+          subtitle="Pressure-test ideas, route high-stakes decisions, and keep founder context in one operating surface."
+          className="!mb-0"
+        />
 
         <Section
           id="workflows"

@@ -10,6 +10,7 @@ import {
   Send,
   Wrench,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { WS_CHAT_URL, getJson } from "@/lib/api";
 import type { AgentEvent } from "@/lib/types";
 
@@ -331,14 +332,15 @@ export function Chat() {
 
   return (
     <div className="flex h-screen flex-col">
-      <div className="border-b border-slate-800 px-8 py-4">
-        <h1 className="text-lg font-semibold">Chat with the CEO</h1>
-        <p className="text-sm text-slate-500">
-          Ask anything about the business — watch the CEO delegate to specialists live.
-        </p>
+      <div className="px-4 pt-4 sm:px-8 sm:pt-5">
+        <PageHeader
+          title="Chat with the CEO"
+          subtitle="Ask anything about the business — watch the CEO delegate to specialists live."
+          className="!mb-0"
+        />
       </div>
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-8 py-6">
+      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-8">
         {exchanges.length === 0 ? (
           <div className="mx-auto mt-16 max-w-lg text-center">
             <div className="text-sm text-slate-400">
@@ -363,7 +365,7 @@ export function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-slate-800 px-8 py-4">
+      <div className="border-t border-slate-800 px-4 py-4 sm:px-8">
         <form
           onSubmit={(e) => {
             e.preventDefault();

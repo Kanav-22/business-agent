@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { AlertTriangle, Check, CornerDownRight, Loader2, RefreshCw } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { getJson } from "@/lib/api";
 import type { ActivityRun } from "@/lib/types";
 
@@ -57,28 +58,26 @@ export default function ActivityPage() {
   const totalCost = (runs ?? []).reduce((acc, r) => acc + (r.cost_usd || 0), 0);
 
   return (
-    <div className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Agent Activity</h1>
-          <p className="text-sm text-slate-500">
-            Every agent run: who ran, why, tools, tokens and cost. Auto-refreshes.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {runs && runs.length > 0 ? (
-            <span className="text-xs text-slate-500">
-              shown runs ≈ ${totalCost.toFixed(2)}
-            </span>
-          ) : null}
-          <button
-            onClick={load}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-200"
-          >
-            <RefreshCw size={12} /> Refresh
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Agent Activity"
+        subtitle="Every agent run: who ran, why, tools, tokens, and cost. Auto-refreshes."
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            {runs && runs.length > 0 ? (
+              <span className="text-xs text-slate-500">
+                shown runs ≈ ${totalCost.toFixed(2)}
+              </span>
+            ) : null}
+            <button
+              onClick={load}
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-800 px-3 text-xs text-slate-400 outline-none hover:border-slate-600 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-violet-400"
+            >
+              <RefreshCw size={12} /> Refresh
+            </button>
+          </div>
+        }
+      />
 
       {error ? (
         <div className="rounded-lg border border-red-900/60 bg-red-950/40 p-4 text-sm text-red-300">

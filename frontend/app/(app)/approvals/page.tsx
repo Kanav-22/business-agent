@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import { Check, Inbox, Loader2, X } from "lucide-react";
 import { Markdown } from "@/components/markdown";
+import { PageHeader } from "@/components/page-header";
 import { API_BASE, getJson } from "@/lib/api";
 import type { Approval } from "@/lib/types";
 
@@ -124,14 +125,11 @@ export default function ApprovalsPage() {
   const decided = (approvals ?? []).filter((a) => a.status !== "pending");
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold">Approvals</h1>
-        <p className="text-sm text-slate-500">
-          Outward-facing agent work waits here. Nothing is published without your
-          click — approving moves a draft to the Reports library.
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Approvals"
+        subtitle="Outward-facing agent work waits here. Nothing is published without your click — approving moves a draft to the Reports library."
+      />
 
       {error ? (
         <div className="rounded-lg border border-red-900/60 bg-red-950/40 p-4 text-sm text-red-300">
