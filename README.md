@@ -201,6 +201,8 @@ migration. See the spec for definitions of done.
 The venture layer turns the 12 audited systems—evals, survival guides, routing, debate, failure simulation, red-teaming, interviews, founder context, memory, playbooks, idea scoring, and execution schema—into a founder-facing operating loop beside the unchanged company-operations layer.
 Open **Venture Studio** at `http://localhost:3000/venture` to run workflows, inspect scored ideas, test routing, edit the founder profile, manage memories, read playbooks, and view eval results.
 
+Operations agents pick up the business profile at backend startup — restart after completing intake.
+
 ```bash
 curl -X POST http://localhost:8000/api/venture/debate -H "Content-Type: application/json" -d '{"topic":"Should we launch a clinic scheduling product?"}'
 curl -X POST http://localhost:8000/api/venture/failure_sim -H "Content-Type: application/json" -d '{"topic":"Clinic scheduling product"}'

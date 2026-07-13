@@ -16,6 +16,7 @@ from sqlalchemy.engine import Engine
 
 from app.agents.budget import TokenBudget
 from app.api.reports import save_report
+from app.venture.intake import DEFAULT_COMPANY_CONTEXT
 
 log = logging.getLogger("business-agent.scheduler")
 
@@ -33,14 +34,18 @@ projects at risk and their deadlines (cto); (4) blocked work across departments 
 (coordinator). Synthesize into a brief of at most ~300 words with clear attribution \
 per specialist. This is a scheduled report — do not address the reader directly."""
 
-COMPETITOR_SCAN_TASK = """\
-Run the weekly competitor scan for Lumina Labs (B2B SaaS analytics; plans at \
-$99/$299/$899 per month). Search the web for, from roughly the past week: (1) pricing \
+def build_competitor_scan_task(company: str) -> str:
+    return f"""\
+Run the weekly competitor scan for {company} Search the web for, from roughly the past \
+week: (1) pricing \
 changes or notable pricing pages among analytics/BI competitors; (2) significant \
 product launches or feature announcements in the analytics space; (3) funding, M&A or \
 shutdown news among comparable companies. Cite the URL for every claim. Finish with \
-2-3 concrete implications for Lumina Labs. This is a scheduled report — do not \
+2-3 concrete implications for {company} This is a scheduled report — do not \
 address the reader directly."""
+
+
+COMPETITOR_SCAN_TASK = build_competitor_scan_task(DEFAULT_COMPANY_CONTEXT)
 
 
 async def _noop_event(event: dict) -> None:
@@ -91,7 +96,7 @@ async def run_weekly_competitor_scan(service, engine: Engine) -> int:
     """Researcher competitor scan (server-side web search) → reports library."""
     today = dt.date.today().isoformat()
     result = await service.specialists["researcher"].run(
-        COMPETITOR_SCAN_TASK,
+        build_competitor_scan_task(service.company_context),
         on_event=_noop_event,
         budget=TokenBudget(limit=service.settings.token_budget),
     )

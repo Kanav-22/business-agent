@@ -217,6 +217,11 @@ INTAKE_SECTIONS = list(dict.fromkeys(question["section"] for question in INTAKE_
 _QUESTION_BY_KEY = {question["key"]: question for question in INTAKE_QUESTIONS}
 _VALUE_CAPS = {"long": 4000, "short": 1500, "number": 1500, "choice": 1500}
 
+DEFAULT_COMPANY_CONTEXT = (
+    "Lumina Labs, a 12-person B2B SaaS analytics company (plans: starter $99, "
+    "growth $299, scale $899 per month)."
+)
+
 UPLOAD_MANIFEST: list[dict] = [
     {
         "key": "transactions_csv",
@@ -266,6 +271,53 @@ def get_business_profile(engine: Engine) -> dict[str, str]:
         rows = session.scalars(select(BusinessProfile)).all()
     stored = {row.key: row.value for row in rows}
     return {key: stored.get(key, "") for key in BUSINESS_KEYS}
+
+
+def _single_line(value: str) -> str:
+    return " ".join(str(value or "").split())
+
+
+def _description_prefix(value: str, limit: int = 200) -> str:
+    """Return one sanitized sentence, bounded without adding an ellipsis."""
+    line = _single_line(value)
+    if not line:
+        return ""
+    prefix = line[:limit]
+    sentence_end = re.search(r"[.!?](?=\s|$)", prefix)
+    if sentence_end:
+        prefix = prefix[: sentence_end.end()]
+    elif len(line) > limit:
+        word_end = prefix.rfind(" ")
+        if word_end > 0:
+            prefix = prefix[:word_end]
+    return prefix.strip().rstrip(".!?")
+
+
+def company_context_line(engine: Engine) -> str:
+    """Return a bounded one-line identity for operations-agent prompts."""
+    try:
+        profile = get_business_profile(engine)
+    except Exception:
+        return DEFAULT_COMPANY_CONTEXT
+
+    name = _single_line(profile.get("name", "")).strip().rstrip(".!?")
+    if not name:
+        return DEFAULT_COMPANY_CONTEXT
+
+    description = _single_line(profile.get("description_own_words", ""))
+    if description:
+        detail = _description_prefix(description)
+    else:
+        pricing = _single_line(profile.get("pricing_summary", ""))
+        detail = pricing.rstrip(".!?") if len(pricing) <= 200 else ""
+
+    context = name
+    if detail:
+        context += f". {detail}"
+    context = context.rstrip(".!?") + "."
+    if len(context) > 300:
+        context = context[:299].rstrip(" .!?") + "."
+    return context
 
 
 def set_business_profile(engine: Engine, values: dict) -> dict[str, str]:
