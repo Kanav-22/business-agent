@@ -1,4 +1,5 @@
 # AI Business OS — Lumina Labs
+[![CI](https://github.com/Kanav-22/business-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Kanav-22/business-agent/actions/workflows/ci.yml)
 
 A multi-agent system that runs a virtual company: a **CEO orchestrator** delegates to
 C-suite specialist agents operating on real (currently synthetic) business data, surfaced
