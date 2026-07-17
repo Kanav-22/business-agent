@@ -11,8 +11,8 @@ else.
 
 | # | Task | Packet (normative spec inside) | Branch | Status |
 |---|------|-------------------------------|--------|--------|
-| 1 | CI pipeline | `docs/tasks/V10-ci-pipeline.md` (self-contained) | `codex/v10-ci` | **READY — start here** |
-| 2 | Evals dashboard + LLM judge | `docs/tasks/V11-evals-dashboard.md` | `codex/v11-evals-dashboard` | Blocked on V10 merge |
+| 1 | CI pipeline | `docs/tasks/V10-ci-pipeline.md` (self-contained) | `codex/v10-ci` | **Merged** — ACCEPT @ `1527ba4` (`V10-REVIEW.md`) |
+| 2 | Evals dashboard + LLM judge | `docs/tasks/V11-evals-dashboard.md` | `codex/v11-evals-dashboard` | **READY — start here** |
 | 3 | Monday Founder Briefing | `docs/tasks/V12-founder-briefing.md` | `codex/v12-founder-briefing` | Blocked on V11 merge |
 
 Standing gates for every task: `cd backend && python3 -m pytest` fully
